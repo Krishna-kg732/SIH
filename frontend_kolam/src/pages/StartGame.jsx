@@ -30,13 +30,14 @@ const StartGame = () => {
     }
   }, []);
 
-  // Level configuration for 10x6 grid system - exact grid positions
+  // Level configuration for 10x6 grid system - 2x2 dot spacing rule
+  // Each level is exactly 2 dots away horizontally AND vertically from the next
   const levels = [
-    { id: 1, name: 'Level 1', difficulty: 'Beginner', gridPos: { row: 5, col: 2 } },   // grid[5,2]
-    { id: 2, name: 'Level 2', difficulty: 'Easy', gridPos: { row: 3, col: 4 } },       // grid[3,4]
-    { id: 3, name: 'Level 3', difficulty: 'Medium', gridPos: { row: 1, col: 6 } },     // grid[1,6]
-    { id: 4, name: 'Level 4', difficulty: 'Hard', gridPos: { row: 3, col: 8 } },       // grid[3,8]
-    { id: 5, name: 'Level 5', difficulty: 'Expert', gridPos: { row: 5, col: 9 } }      // grid[5,9]
+    { id: 1, name: 'Level 1', difficulty: 'Beginner', gridPos: { row: 5, col: 2 } },   // grid[2,1] - Moved 1 column left from col 2
+    { id: 2, name: 'Level 2', difficulty: 'Easy', gridPos: { row: 3, col: 4 } },       // grid[3,4] - 1 down, 3 right from level 1
+    { id: 3, name: 'Level 3', difficulty: 'Medium', gridPos: { row: 5, col: 6 } },     // grid[5,6] - Moved 4 dots down from row 1
+    { id: 4, name: 'Level 4', difficulty: 'Hard', gridPos: { row: 3, col: 8 } },       // grid[3,8] - 2 down, 2 right from original level 3
+    { id: 5, name: 'Level 5', difficulty: 'Expert', gridPos: { row: 5, col: 10 } }     // grid[5,10] - Moved 4 dots down from row 1
   ];
 
   // Grid configuration for 10x6 system
@@ -101,7 +102,7 @@ const StartGame = () => {
     handleLevelClick(nextLevel);
   };
 
-  // Create precise path between two levels using grid coordinates
+  // Create zigzag "W" pattern path between two levels using grid coordinates
   const createPath = (fromIndex, toIndex) => {
     const from = levels[fromIndex];
     const to = levels[toIndex];
@@ -120,11 +121,56 @@ const StartGame = () => {
       pathState = 'locked';
     }
     
+    // Calculate gentle crests and peaks for 2x2 diagonal progression
+    const deltaX = toCoords.x - fromCoords.x;
+    const deltaY = toCoords.y - fromCoords.y;
+    
+    let waypoints;
+    
+    // Straight line for Level 1 → Level 2 connection
+    if (fromIndex === 0) { // Level 1 to Level 2
+      waypoints = [
+        { x: fromCoords.x, y: fromCoords.y }, // Start point (Level 1)
+        { x: toCoords.x, y: toCoords.y } // End point (Level 2)
+      ];
+    } 
+    // Straight line for Level 2 → Level 3 connection
+    else if (fromIndex === 1) { // Level 2 to Level 3
+      waypoints = [
+        { x: fromCoords.x, y: fromCoords.y }, // Start point (Level 2)
+        { x: toCoords.x, y: toCoords.y } // End point (Level 3)
+      ];
+    }
+    // Straight line for Level 4 → Level 5 connection
+    else if (fromIndex === 3) { // Level 4 to Level 5
+      waypoints = [
+        { x: fromCoords.x, y: fromCoords.y }, // Start point (Level 4)
+        { x: toCoords.x, y: toCoords.y } // End point (Level 5)
+      ];
+    } 
+    else {
+      // Standard subtle waypoints for other connections
+      const crestHeight = 12; // Gentle crest/peak amplitude
+      waypoints = [
+        { x: fromCoords.x, y: fromCoords.y }, // Start point
+        { 
+          x: fromCoords.x + deltaX * 0.3, 
+          y: fromCoords.y + deltaY * 0.2 - crestHeight // Create upward crest
+        },
+        { 
+          x: fromCoords.x + deltaX * 0.7, 
+          y: fromCoords.y + deltaY * 0.8 + crestHeight // Create downward peak
+        },
+        { x: toCoords.x, y: toCoords.y } // End point
+      ];
+    }
+    
+    // Convert waypoints to SVG polyline points string
+    const pathPoints = waypoints.map(point => `${point.x},${point.y}`).join(' ');
+    
     return {
-      x1: fromCoords.x,
-      y1: fromCoords.y,
-      x2: toCoords.x,
-      y2: toCoords.y,
+      pathPoints,
+      waypoints,
       state: pathState,
       delay: fromIndex * 0.3
     };
@@ -209,16 +255,14 @@ const StartGame = () => {
                 )}
               </div>
 
-              {/* SVG for Paths - 10x6 Grid coordinate system */}
+              {/* SVG for Zigzag Paths - 10x6 Grid coordinate system */}
               <svg className="absolute inset-0" width="900" height="420" style={{ zIndex: 5 }}>
                 {paths.map((path, index) => (
                   <g key={`path-${index}`}>
-                    {/* Main Path Line - Using exact grid coordinates */}
-                    <motion.line
-                      x1={path.x1}
-                      y1={path.y1}
-                      x2={path.x2}
-                      y2={path.y2}
+                    {/* Zigzag Path using Polyline - Creates "W" pattern */}
+                    <motion.polyline
+                      points={path.pathPoints}
+                      fill="none"
                       stroke={
                         path.state === 'completed' 
                           ? 'url(#completedGradient)' 
@@ -228,6 +272,7 @@ const StartGame = () => {
                       }
                       strokeWidth={path.state === 'active' ? '5' : '4'}
                       strokeLinecap="round"
+                      strokeLinejoin="round"
                       strokeDasharray={path.state === 'locked' ? '8,4' : '0'}
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ 
@@ -241,23 +286,28 @@ const StartGame = () => {
                       }}
                     />
                     
-                    {/* Animated flowing particles for active path */}
-                    {path.state === 'active' && (
+                    {/* Animated flowing particles for active path (V or crest/peak) */}
+                    {path.state === 'active' && path.waypoints && (
                       <motion.circle
                         r="3"
                         fill="#a91b3d"
                         initial={{ 
-                          cx: path.x1,
-                          cy: path.y1
+                          cx: path.waypoints[0].x,
+                          cy: path.waypoints[0].y
                         }}
                         animate={{ 
-                          cx: path.x2,
-                          cy: path.y2
+                          cx: path.waypoints.map(p => p.x),
+                          cy: path.waypoints.map(p => p.y)
                         }}
                         transition={{ 
-                          duration: 2, 
+                          duration: 2.5, 
                           repeat: Infinity, 
-                          ease: "linear"
+                          ease: "easeInOut",
+                          times: path.waypoints.length === 2 
+                            ? [0, 1] // Straight line (2 waypoints)
+                            : path.waypoints.length === 3 
+                            ? [0, 0.5, 1] // V pattern (3 waypoints)
+                            : [0, 0.33, 0.67, 1] // Standard pattern (4 waypoints)
                         }}
                       />
                     )}
