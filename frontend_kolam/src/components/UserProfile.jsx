@@ -6,22 +6,18 @@ const UserProfile = ({ userData, darkMode = false }) => {
   const { username, currentLevel, currentAccuracy, avatar } = userData;
 
   return (
-    <div className={`backdrop-blur-md rounded-2xl p-6 border transition-colors duration-300 ${
+    <div className={`rounded-2xl p-6 border transition-colors duration-300 ${
       darkMode 
         ? 'bg-white/5 border-white/10' 
-        : 'bg-white/80 border-gray-200/50 shadow-lg'
+        : 'bg-white border-gray-200/50 shadow-sm'
     }`}>
       {/* Avatar and Username Section */}
       <div className="flex items-center space-x-4 mb-6">
         {/* Avatar */}
         <motion.div
           className="w-16 h-16 rounded-full bg-gradient-to-br from-red-200 to-red-300 flex items-center justify-center relative overflow-hidden"
-          style={{
-            boxShadow: '0 0 20px rgba(210, 180, 140, 0.3)'
-          }}
           whileHover={{ 
-            scale: 1.05,
-            boxShadow: '0 0 30px rgba(210, 180, 140, 0.5)'
+            scale: 1.05
           }}
           transition={{ duration: 0.3 }}
         >

@@ -20,10 +20,10 @@ const PreviousAttempts = ({ attempts, darkMode = false }) => {
   };
 
   return (
-    <div className={`backdrop-blur-md rounded-2xl p-6 border h-full transition-colors duration-300 ${
+    <div className={`rounded-2xl p-6 border h-full transition-colors duration-300 ${
       darkMode 
         ? 'bg-white/5 border-white/10' 
-        : 'bg-white/80 border-gray-200/50 shadow-lg'
+        : 'bg-white border-gray-200/50 shadow-sm'
     }`}>
       {/* Section Header */}
       <div className="flex items-center space-x-3 mb-6">

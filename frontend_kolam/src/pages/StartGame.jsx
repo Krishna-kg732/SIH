@@ -30,22 +30,40 @@ const StartGame = () => {
     }
   }, []);
 
-  // Level configuration with proper zigzag positioning on dot grid
+  // Level configuration for 10x6 grid system - exact grid positions
   const levels = [
-    { id: 1, name: 'Level 1', difficulty: 'Beginner', gridPos: { row: 3, col: 0 } },
-    { id: 2, name: 'Level 2', difficulty: 'Easy', gridPos: { row: 1, col: 1 } },
-    { id: 3, name: 'Level 3', difficulty: 'Medium', gridPos: { row: 0, col: 2 } },
-    { id: 4, name: 'Level 4', difficulty: 'Hard', gridPos: { row: 1, col: 3 } },
-    { id: 5, name: 'Level 5', difficulty: 'Expert', gridPos: { row: 3, col: 4 } }
+    { id: 1, name: 'Level 1', difficulty: 'Beginner', gridPos: { row: 5, col: 2 } },   // grid[5,2]
+    { id: 2, name: 'Level 2', difficulty: 'Easy', gridPos: { row: 3, col: 4 } },       // grid[3,4]
+    { id: 3, name: 'Level 3', difficulty: 'Medium', gridPos: { row: 1, col: 6 } },     // grid[1,6]
+    { id: 4, name: 'Level 4', difficulty: 'Hard', gridPos: { row: 3, col: 8 } },       // grid[3,8]
+    { id: 5, name: 'Level 5', difficulty: 'Expert', gridPos: { row: 5, col: 9 } }      // grid[5,9]
   ];
 
-  // Convert grid position to percentage
-  const getPosition = (gridPos) => {
-    const cols = 5;
-    const rows = 4;
+  // Grid configuration for 10x6 system
+  const gridConfig = {
+    cols: 10,
+    rows: 6,
+    containerWidth: 900,
+    containerHeight: 420,
+    horizontalSpacing: 80,
+    verticalSpacing: 70,
+    startX: 80, // First column position
+    startY: 70  // First row position
+  };
+
+  // Calculate pixel coordinates from grid position
+  const getGridCoordinates = (gridPos) => {
+    const x = gridConfig.startX + (gridPos.col - 1) * gridConfig.horizontalSpacing;
+    const y = gridConfig.startY + (gridPos.row - 1) * gridConfig.verticalSpacing;
+    return { x, y };
+  };
+
+  // Convert absolute pixel coordinates for fixed 600x360px container
+  const getPosition = (pixelPos) => {
+    // Direct pixel positioning for absolute layout
     return {
-      x: (gridPos.col / (cols - 1)) * 80 + 10, // 10% margin on each side
-      y: (gridPos.row / (rows - 1)) * 70 + 15  // 15% margin top/bottom
+      x: pixelPos.x,
+      y: pixelPos.y
     };
   };
 
@@ -83,12 +101,12 @@ const StartGame = () => {
     handleLevelClick(nextLevel);
   };
 
-  // Create path between two levels
+  // Create precise path between two levels using grid coordinates
   const createPath = (fromIndex, toIndex) => {
     const from = levels[fromIndex];
     const to = levels[toIndex];
-    const fromPos = getPosition(from.gridPos);
-    const toPos = getPosition(to.gridPos);
+    const fromCoords = getGridCoordinates(from.gridPos);
+    const toCoords = getGridCoordinates(to.gridPos);
     
     const fromState = getLevelState(from.id);
     const toState = getLevelState(to.id);
@@ -103,10 +121,10 @@ const StartGame = () => {
     }
     
     return {
-      x1: fromPos.x,
-      y1: fromPos.y,
-      x2: toPos.x,
-      y2: toPos.y,
+      x1: fromCoords.x,
+      y1: fromCoords.y,
+      x2: toCoords.x,
+      y2: toCoords.y,
       state: pathState,
       delay: fromIndex * 0.3
     };
@@ -156,21 +174,33 @@ const StartGame = () => {
         {/* Level Map Container - light background with dot grid */}
         <div className="bg-gray-50 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
           <div className="p-8 lg:p-12">
-            {/* Level Map */}
-            <div className="relative h-80 lg:h-96">
-              {/* Background Dot Grid - 5x4 matrix */}
-              <div className="absolute inset-0">
-                {Array.from({ length: 4 }).map((_, row) =>
-                  Array.from({ length: 5 }).map((_, col) => {
-                    const pos = getPosition({ row, col });
+            {/* Level Map - 10x6 Grid System (900x420px) */}
+            <div className="relative mx-auto" style={{ width: '900px', height: '420px' }}>
+              {/* Background Dot Grid - 10x6 grid with level positions skipped */}
+              <div className="absolute inset-0" style={{ zIndex: 1 }}>
+                {/* Generate 10x6 grid dots (60 total), skipping level positions */}
+                {Array.from({ length: gridConfig.rows }).map((_, row) =>
+                  Array.from({ length: gridConfig.cols }).map((_, col) => {
+                    const gridRow = row + 1; // 1-indexed
+                    const gridCol = col + 1; // 1-indexed
+                    const coords = getGridCoordinates({ row: gridRow, col: gridCol });
+                    
+                    // Skip dots where level nodes will be placed
+                    const isLevelPosition = levels.some(level => 
+                      level.gridPos.row === gridRow && level.gridPos.col === gridCol
+                    );
+                    
+                    if (isLevelPosition) return null;
+                    
                     return (
                       <div
                         key={`dot-${row}-${col}`}
-                        className="absolute w-2 h-2 rounded-full opacity-60"
+                        className="absolute w-2 h-2 rounded-full"
                         style={{
-                          backgroundColor: '#780000',
-                          left: `${pos.x}%`,
-                          top: `${pos.y}%`,
+                          backgroundColor: '#ffb6c1',
+                          opacity: 0.4,
+                          left: `${coords.x}px`,
+                          top: `${coords.y}px`,
                           transform: 'translate(-50%, -50%)'
                         }}
                       />
@@ -179,16 +209,16 @@ const StartGame = () => {
                 )}
               </div>
 
-              {/* SVG for Paths */}
-              <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 2 }}>
+              {/* SVG for Paths - 10x6 Grid coordinate system */}
+              <svg className="absolute inset-0" width="900" height="420" style={{ zIndex: 5 }}>
                 {paths.map((path, index) => (
                   <g key={`path-${index}`}>
-                    {/* Main Path Line */}
+                    {/* Main Path Line - Using exact grid coordinates */}
                     <motion.line
-                      x1={`${path.x1}%`}
-                      y1={`${path.y1}%`}
-                      x2={`${path.x2}%`}
-                      y2={`${path.y2}%`}
+                      x1={path.x1}
+                      y1={path.y1}
+                      x2={path.x2}
+                      y2={path.y2}
                       stroke={
                         path.state === 'completed' 
                           ? 'url(#completedGradient)' 
@@ -217,12 +247,12 @@ const StartGame = () => {
                         r="3"
                         fill="#a91b3d"
                         initial={{ 
-                          cx: `${path.x1}%`,
-                          cy: `${path.y1}%`
+                          cx: path.x1,
+                          cy: path.y1
                         }}
                         animate={{ 
-                          cx: `${path.x2}%`,
-                          cy: `${path.y2}%`
+                          cx: path.x2,
+                          cy: path.y2
                         }}
                         transition={{ 
                           duration: 2, 
@@ -243,18 +273,18 @@ const StartGame = () => {
                 </defs>
               </svg>
 
-              {/* Level Nodes */}
+              {/* Level Nodes - 10x6 Grid positioning */}
               {levels.map((level, index) => {
                 const state = getLevelState(level.id);
-                const position = getPosition(level.gridPos);
+                const { x, y } = getGridCoordinates(level.gridPos);
+                
                 return (
                   <motion.div
                     key={level.id}
                     className="absolute"
                     style={{
-                      left: `${position.x}%`,
-                      top: `${position.y}%`,
-                      transform: 'translate(-50%, -50%)',
+                      left: `${x - 32}px`,  // Subtract half width (32px) to center
+                      top: `${y - 32}px`,   // Subtract half height (32px) to center
                       zIndex: 10
                     }}
                     initial={{ scale: 0, opacity: 0 }}
@@ -276,7 +306,7 @@ const StartGame = () => {
                           ? 'bg-white border-red-900 text-red-900 shadow-lg cursor-pointer' 
                           : state === 'current'
                           ? 'bg-white border-red-800 text-red-800 shadow-xl cursor-pointer'
-                          : 'bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
+                          : 'bg-white border-gray-400 text-gray-500 cursor-not-allowed'
                         }
                       `}
                       whileHover={state !== 'locked' ? { 

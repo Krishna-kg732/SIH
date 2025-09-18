@@ -20,29 +20,18 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
   };
 
   return (
-    <div className={`backdrop-blur-md rounded-2xl p-8 border text-center transition-colors duration-300 ${
+    <div className={`rounded-2xl p-8 border text-center transition-colors duration-300 ${
       darkMode 
         ? 'bg-white/5 border-white/10' 
-        : 'bg-white/80 border-gray-200/50 shadow-lg'
+        : 'bg-white border-gray-200/50 shadow-sm'
     }`}>
       {/* Icon and Title */}
       <div className="mb-6">
         <motion.div
           className="w-16 h-16 rounded-full bg-gradient-to-br from-red-300 to-red-400 flex items-center justify-center mx-auto mb-4"
-          style={{
-            boxShadow: '0 0 30px rgba(210, 180, 140, 0.3)'
-          }}
-          animate={{ 
-            boxShadow: [
-              '0 0 30px rgba(210, 180, 140, 0.3)',
-              '0 0 40px rgba(210, 180, 140, 0.5)',
-              '0 0 30px rgba(210, 180, 140, 0.3)'
-            ]
-          }}
+          whileHover={{ scale: 1.05 }}
           transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut'
+            duration: 0.3
           }}
         >
           <Zap className="w-8 h-8 text-red-800" />
@@ -63,13 +52,9 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
       {/* Main CTA Button */}
       <motion.button
         onClick={handleStartGame}
-        className="group relative bg-gradient-to-r from-red-400 to-red-500 text-red-900 font-bold text-xl px-8 py-4 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
-        style={{
-          boxShadow: '0 10px 30px rgba(210, 180, 140, 0.3)'
-        }}
+        className="group relative bg-gradient-to-r from-red-400 to-red-500 text-red-900 font-bold text-xl px-8 py-4 rounded-xl overflow-hidden transition-all duration-300"
         whileHover={{ 
-          scale: 1.05,
-          boxShadow: '0 15px 40px rgba(210, 180, 140, 0.4)'
+          scale: 1.05
         }}
         whileTap={{ scale: 0.98 }}
         transition={{ 
@@ -78,11 +63,6 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
           damping: 10 
         }}
       >
-        {/* Background Glow Effect */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-red-300 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          initial={false}
-        />
         
         {/* Button Content */}
         <div className="relative flex items-center justify-center space-x-3">
