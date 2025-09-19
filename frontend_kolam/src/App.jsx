@@ -20,6 +20,7 @@ function App() {
         <Route path="/quiz/:levelId" element={<QuizQuestion />} />
         <Route path="/ai-recognition" element={<AIRecognition />} />
         <Route path="/recreate-patterns" element={<RecreatePatterns />} />
+        <Route path="/pattern-recreation" element={<RecreatePatterns />} />
       </Routes>
     </Router>
   );

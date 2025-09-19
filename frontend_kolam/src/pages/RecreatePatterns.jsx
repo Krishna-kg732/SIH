@@ -1,465 +1,439 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, Trophy, Target, Lock, Unlock, RotateCcw, Check, 
-  Play, Pause, Home, ArrowLeft, Lightbulb, Eye, Palette 
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Palette, Sparkles } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import apiService from '../services/apiService';
+import { 
+  KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+  KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8,
+  KolamPattern9, KolamPattern10
+} from '../assets/svg';
+
+// Hand-drawn decorative SVG components
+const LeafBranch = ({ className, style }) => (
+  <svg 
+    viewBox="0 0 100 100" 
+    className={className}
+    style={style}
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20 50 Q30 30 50 35 Q70 40 80 20" />
+    <path d="M35 40 Q40 35 45 40" />
+    <path d="M25 55 Q30 50 35 55" />
+    <path d="M55 45 Q60 40 65 45" />
+    <path d="M65 55 Q70 50 75 55" />
+  </svg>
+);
+
+const HashGrid = ({ className, style }) => (
+  <svg 
+    viewBox="0 0 100 100" 
+    className={className}
+    style={style}
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2"
+    strokeLinecap="round"
+  >
+    <path d="M30 20 L30 80" />
+    <path d="M70 20 L70 80" />
+    <path d="M20 30 L80 30" />
+    <path d="M20 70 L80 70" />
+  </svg>
+);
+
+// Custom Kolam Loading Spinner
+const KolamLoader = ({ className, color = "#FFFFFF" }) => (
+  <motion.svg 
+    width="24" 
+    height="24" 
+    viewBox="0 0 101 101" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    animate={{ rotate: 360 }}
+    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+  >
+    <g opacity="0.8">
+      <path d="M51.5771 1.12308L64.0771 25.6231" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="51.6563" y1="50.6435" x2="39.0205" y2="25.659" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M39.0762 25.6233L51.6556 1.06416" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="51.3265" y1="50.664" x2="63.9624" y2="25.6795" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M51.5766 51.1229L64.0765 74.123" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="51.6563" y1="99.2589" x2="39.0205" y2="74.2744" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M39.0762 74.1232L51.5762 50.6232" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M52.0763 99.1229L63.9633 74.2948" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="51.0199" y1="50.2745" x2="26.0354" y2="62.9103" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="1.44105" y1="51.8947" x2="26.4256" y2="39.2589" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M26.5767 39.123L51.0768 50.623" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M2.07713 52.1232L25.5771 63.1232" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M99.6362 49.6592L75.0773 63.6232" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M52.0781 50.123L75.0422 38.6436" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M75.0765 38.6232L99.5765 49.623" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M52.0781 51.1232L75.0217 63.5872" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    </g>
+  </motion.svg>
+);
 
 const RecreatePatterns = () => {
-  const navigate = useNavigate();
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [userProgress, setUserProgress] = useState({
-    completedLevels: [],
-    currentLevel: 1,
-    accuracy: 0,
-    username: 'Player'
-  });
-  const [selectedTool, setSelectedTool] = useState('draw');
-  const [brushSize, setBrushSize] = useState(3);
-  const [showPattern, setShowPattern] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [score, setScore] = useState(0);
-  const [showLevelModal, setShowLevelModal] = useState(false);
-  const [selectedModalLevel, setSelectedModalLevel] = useState(null);
+  const [inputValue, setInputValue] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedResult, setGeneratedResult] = useState(null);
+  const resultsRef = useRef(null);
 
-  // Level data with patterns and difficulty
-  const levels = [
-    {
-      id: 1,
-      name: "Simple Dots",
-      difficulty: "Beginner",
-      pattern: "simple_dots",
-      description: "Connect 4 dots to form a basic square pattern",
-      maxScore: 100
-    },
-    {
-      id: 2,
-      name: "Cross Pattern",
-      difficulty: "Easy",
-      pattern: "cross",
-      description: "Create a traditional cross Kolam with 6 dots",
-      maxScore: 150
-    },
-    {
-      id: 3,
-      name: "Flower Design",
-      difficulty: "Medium",
-      pattern: "flower",
-      description: "Draw a beautiful flower pattern with 8 dots",
-      maxScore: 200
-    },
-    {
-      id: 4,
-      name: "Geometric Maze",
-      difficulty: "Hard",
-      pattern: "maze",
-      description: "Complete a complex geometric maze pattern",
-      maxScore: 250
-    },
-    {
-      id: 5,
-      name: "Master Pattern",
-      difficulty: "Expert",
-      pattern: "master",
-      description: "Create an intricate traditional Kolam design",
-      maxScore: 300
-    }
-  ];
-
-  // Load user progress from localStorage
+  // Auto-scroll to results when image is generated
   useEffect(() => {
-    const savedProgress = localStorage.getItem('kolamProgress');
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress);
-      setUserProgress(progress);
-      setCurrentLevel(progress.currentLevel);
-    }
-  }, []);
-
-  // Save progress to localStorage
-  const saveProgress = useCallback((newProgress) => {
-    localStorage.setItem('kolamProgress', JSON.stringify(newProgress));
-    setUserProgress(newProgress);
-  }, []);
-
-  // Canvas drawing logic
-  const startDrawing = useCallback((e) => {
-    if (selectedTool !== 'draw') return;
-    setIsDrawing(true);
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const ctx = canvas.getContext('2d');
-    
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-  }, [selectedTool]);
-
-  const draw = useCallback((e) => {
-    if (!isDrawing || selectedTool !== 'draw') return;
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const ctx = canvas.getContext('2d');
-    
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#780000';
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke();
-  }, [isDrawing, selectedTool, brushSize]);
-
-  const stopDrawing = useCallback(() => {
-    setIsDrawing(false);
-  }, []);
-
-  // Clear canvas
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGrid();
-  };
-
-  // Draw dot grid
-  const drawGrid = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const gridSize = 40;
-    
-    ctx.fillStyle = '#666666';
-    for (let x = gridSize; x < canvas.width; x += gridSize) {
-      for (let y = gridSize; y < canvas.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    }
-  }, []);
-
-  // Initialize canvas
-  useEffect(() => {
-    if (canvasRef.current) {
-      drawGrid();
-    }
-  }, [drawGrid]);
-
-  // Level completion logic
-  const checkCompletion = () => {
-    // Simulate pattern validation
-    const completionScore = Math.floor(Math.random() * 100) + 50;
-    setScore(completionScore);
-    
-    if (completionScore >= 70) {
-      setIsCompleted(true);
-      const newCompletedLevels = [...userProgress.completedLevels];
-      if (!newCompletedLevels.includes(currentLevel)) {
-        newCompletedLevels.push(currentLevel);
-      }
+    if (generatedResult && resultsRef.current) {
+      const timeout = setTimeout(() => {
+        resultsRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+      }, 500); // Slightly longer delay to ensure smooth animation completion
       
-      const newProgress = {
-        ...userProgress,
-        completedLevels: newCompletedLevels,
-        currentLevel: Math.min(currentLevel + 1, 5),
-        accuracy: Math.round((newCompletedLevels.length / 5) * 100)
-      };
-      saveProgress(newProgress);
+      return () => clearTimeout(timeout);
+    }
+  }, [generatedResult]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+
+    setIsGenerating(true);
+    
+    try {
+      // Use the centralized API service
+      const result = await apiService.generateKolamFromDescription(inputValue, true);
+      setGeneratedResult(result);
+    } catch (error) {
+      console.error('Error generating design:', error);
+      // You can add proper error handling here
+      setGeneratedResult({
+        explanation: "Sorry, there was an error generating your design. Please try again.",
+        image_base64: null
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  // Level navigation
-  const goToLevel = (levelId) => {
-    if (levelId <= userProgress.currentLevel || userProgress.completedLevels.includes(levelId - 1)) {
-      setCurrentLevel(levelId);
-      setIsCompleted(false);
-      setScore(0);
-      clearCanvas();
-    }
+  const handleClear = () => {
+    setInputValue('');
+    setGeneratedResult(null);
+    // Optionally scroll back to top when clearing
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // Get level state
-  const getLevelState = (levelId) => {
-    if (userProgress.completedLevels.includes(levelId)) return 'completed';
-    if (levelId === userProgress.currentLevel) return 'current';
-    if (levelId <= userProgress.currentLevel) return 'available';
-    return 'locked';
-  };
-
-  // Level modal component
-  const LevelModal = ({ level, onClose, onReplay, onViewStats }) => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.8 }}
-        className="bg-white rounded-2xl p-8 max-w-md mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-2xl font-bold text-[#1E1E1E] mb-4">{level.name}</h3>
-        <p className="text-[#666666] mb-6">{level.description}</p>
-        <div className="flex gap-4">
-          <button
-            onClick={onReplay}
-            className="flex-1 bg-[#780000] text-white py-3 rounded-xl font-semibold hover:bg-[#5a0000] transition-colors"
-          >
-            Replay Level
-          </button>
-          <button
-            onClick={onViewStats}
-            className="flex-1 border-2 border-[#780000] text-[#780000] py-3 rounded-xl font-semibold hover:bg-[#780000] hover:text-white transition-all"
-          >
-            View Stats
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
 
   return (
-    <div className="min-h-screen bg-[#F9F2E9]">
-      <Navbar />
+    <div className="min-h-screen transition-colors duration-300" 
+         style={{ backgroundColor: '#F5F1EB' }}>
       
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b-2 border-[#780000]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 rounded-lg hover:bg-[#F9F2E9] transition-colors"
+      {/* Navigation */}
+      <Navbar darkMode={false} />
+      
+      {/* Animated Kolam Pattern Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Floating Kolam Patterns with automatic slow animations */}
+        {[
+          { Component: KolamPattern1, position: 'top-16 left-16', duration: 45, delay: 0 },
+          { Component: KolamPattern2, position: 'top-20 right-20', duration: 55, delay: 5 },
+          { Component: KolamPattern3, position: 'top-1/3 left-1/4', duration: 35, delay: 10 },
+          { Component: KolamPattern4, position: 'top-1/2 right-16', duration: 40, delay: 15 },
+          { Component: KolamPattern5, position: 'bottom-1/3 left-20', duration: 50, delay: 20 },
+          { Component: KolamPattern6, position: 'bottom-20 right-1/4', duration: 60, delay: 25 },
+          { Component: KolamPattern7, position: 'top-3/4 left-1/3', duration: 42, delay: 30 },
+          { Component: KolamPattern8, position: 'bottom-1/4 right-1/3', duration: 38, delay: 35 },
+        ].map(({ Component, position, duration, delay }, index) => (
+          <motion.div
+            key={index}
+            className={`absolute ${position} opacity-[0.12]`}
+            animate={{
+              rotate: [0, 360],
+              scale: [1, 1.1, 1],
+              y: [-10, 10, -10],
+              x: [-5, 5, -5],
+            }}
+            transition={{
+              duration: duration,
+              repeat: Infinity,
+              ease: "linear",
+              delay: delay,
+            }}
+          >
+            <Component 
+              size={60 + (index % 3) * 15}
+              color="#A67C52"
+              opacity={0.6}
+            />
+          </motion.div>
+        ))}
+        
+        {/* Corner decorative elements with slow rotation */}
+        {[
+          { Component: KolamPattern9, position: 'top-4 left-4', rotation: [0, 180], duration: 80 },
+          { Component: KolamPattern10, position: 'top-4 right-4', rotation: [0, -180], duration: 70 },
+          { Component: KolamPattern1, position: 'bottom-4 left-4', rotation: [180, 360], duration: 75 },
+          { Component: KolamPattern2, position: 'bottom-4 right-4', rotation: [-180, 0], duration: 85 },
+        ].map(({ Component, position, rotation, duration }, index) => (
+          <motion.div
+            key={`corner-${index}`}
+            className={`absolute ${position} opacity-[0.15]`}
+            animate={{
+              rotate: rotation,
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: index * 8,
+            }}
+          >
+            <Component 
+              size={40}
+              color="#A67C52"
+              opacity={0.8}
+            />
+          </motion.div>
+        ))}
+        
+        {/* Floating particles with subtle movement */}
+        {[...Array(6)].map((_, index) => {
+          const PatternComponent = [KolamPattern3, KolamPattern4, KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8][index];
+          return (
+            <motion.div
+              key={`particle-${index}`}
+              className="absolute opacity-[0.08]"
+              style={{
+                left: `${15 + (index % 3) * 25}%`,
+                top: `${20 + Math.floor(index / 3) * 35}%`,
+              }}
+              animate={{
+                y: [-20, 20, -20],
+                x: [-15, 15, -15],
+                rotate: [0, 90, 180, 270, 360],
+                scale: [0.8, 1.2, 0.8],
+              }}
+              transition={{
+                duration: 60 + index * 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: index * 12,
+              }}
             >
-              <Home className="w-6 h-6 text-[#780000]" />
-            </button>
-            <h1 className="text-3xl font-bold text-[#1E1E1E]">Kolam Vision</h1>
-          </div>
-          
-          {/* User Profile */}
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-lg font-semibold text-[#1E1E1E]">{userProgress.username}</p>
-              <p className="text-sm text-[#666666]">Level {userProgress.currentLevel} • {userProgress.accuracy}% Complete</p>
-            </div>
-            <div className="w-12 h-12 bg-[#780000] rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          
-          {/* Level Map */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-[#780000]/20">
-              <h2 className="text-2xl font-bold text-[#1E1E1E] mb-6">Level Progress</h2>
-              
-              {/* Zigzag Level Path */}
-              <div className="relative h-96">
-                {levels.map((level, index) => {
-                  const state = getLevelState(level.id);
-                  const x = index % 2 === 0 ? 20 : 180;
-                  const y = 60 + (index * 60);
-                  
-                  return (
-                    <div key={level.id}>
-                      {/* Connecting Line */}
-                      {index > 0 && (
-                        <svg
-                          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                          style={{ zIndex: 1 }}
-                        >
-                          <line
-                            x1={index % 2 === 1 ? 20 + 30 : 180 + 30}
-                            y1={60 + ((index - 1) * 60) + 30}
-                            x2={x + 30}
-                            y2={y + 30}
-                            stroke={state === 'locked' ? '#555' : '#780000'}
-                            strokeWidth={state === 'current' ? 5 : 4}
-                            strokeDasharray={state === 'locked' ? '5,5' : 'none'}
-                            className={state === 'current' ? 'animate-pulse' : ''}
-                          />
-                        </svg>
-                      )}
-                      
-                      {/* Level Node */}
-                      <motion.button
-                        style={{ left: x, top: y, zIndex: 2 }}
-                        className={`absolute w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl transition-all duration-300 ${
-                          state === 'completed'
-                            ? 'bg-white text-[#780000] border-2 border-[#780000] shadow-lg shadow-yellow-300/50'
-                            : state === 'current'
-                            ? 'bg-white text-[#780000] border-2 border-[#780000] animate-pulse shadow-lg shadow-[#780000]/50'
-                            : state === 'available'
-                            ? 'bg-white text-[#780000] border-2 border-[#780000] hover:scale-110'
-                            : 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-60'
-                        }`}
-                        whileHover={state !== 'locked' ? { scale: 1.1 } : { x: [0, -5, 5, 0] }}
-                        whileTap={state !== 'locked' ? { scale: 0.95 } : {}}
-                        onClick={() => {
-                          if (state === 'completed') {
-                            setSelectedModalLevel(level);
-                            setShowLevelModal(true);
-                          } else if (state === 'available' || state === 'current') {
-                            goToLevel(level.id);
-                          }
-                        }}
-                        disabled={state === 'locked'}
-                        title={state === 'locked' ? 'Complete previous level to unlock' : level.name}
-                      >
-                        {state === 'locked' ? <Lock className="w-6 h-6" /> : level.id}
-                      </motion.button>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              {/* Start Game Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => goToLevel(userProgress.currentLevel)}
-                className="w-full mt-6 bg-[#780000] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#5a0000] transition-colors shadow-lg"
-              >
-                {userProgress.completedLevels.length === 0 ? 'Start Game' : 'Continue Playing'}
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Drawing Canvas */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-[#780000]/20">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-[#1E1E1E]">
-                    Level {currentLevel}: {levels[currentLevel - 1]?.name}
-                  </h2>
-                  <p className="text-[#666666]">{levels[currentLevel - 1]?.description}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-6 h-6 text-[#780000]" />
-                  <span className="text-lg font-semibold text-[#1E1E1E]">{score}/100</span>
-                </div>
-              </div>
-
-              {/* Tools */}
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-[#1E1E1E]">Brush Size:</label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={brushSize}
-                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                    className="w-20 accent-[#780000]"
-                  />
-                  <span className="text-sm text-[#666666]">{brushSize}px</span>
-                </div>
-                
-                <button
-                  onClick={() => setShowPattern(!showPattern)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    showPattern 
-                      ? 'bg-[#780000] text-white' 
-                      : 'border-2 border-[#780000] text-[#780000] hover:bg-[#780000] hover:text-white'
-                  }`}
-                >
-                  <Eye className="w-4 h-4 inline mr-2" />
-                  {showPattern ? 'Hide Pattern' : 'Show Pattern'}
-                </button>
-                
-                <button
-                  onClick={clearCanvas}
-                  className="px-4 py-2 rounded-lg border-2 border-[#780000] text-[#780000] hover:bg-[#780000] hover:text-white transition-all font-semibold"
-                >
-                  <RotateCcw className="w-4 h-4 inline mr-2" />
-                  Clear
-                </button>
-                
-                <button
-                  onClick={checkCompletion}
-                  className="px-6 py-2 bg-[#780000] text-white rounded-lg hover:bg-[#5a0000] transition-colors font-semibold"
-                >
-                  <Check className="w-4 h-4 inline mr-2" />
-                  Check Pattern
-                </button>
-              </div>
-
-              {/* Canvas */}
-              <div className="relative">
-                <canvas
-                  ref={canvasRef}
-                  width={800}
-                  height={500}
-                  className="border-2 border-[#780000]/20 rounded-xl bg-[#F9F2E9] cursor-crosshair"
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                />
-                
-                {/* Pattern Overlay */}
-                {showPattern && (
-                  <div className="absolute inset-0 bg-[#780000]/10 rounded-xl flex items-center justify-center">
-                    <div className="text-[#780000] font-semibold bg-white px-4 py-2 rounded-lg">
-                      Pattern Guide Active
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Completion Message */}
-              <AnimatePresence>
-                {isCompleted && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="mt-6 p-6 bg-green-50 border-2 border-green-300 rounded-xl text-center"
-                  >
-                    <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-green-800 mb-2">Level Completed!</h3>
-                    <p className="text-green-700 mb-4">Score: {score}/100</p>
-                    <button
-                      onClick={() => goToLevel(currentLevel + 1)}
-                      disabled={currentLevel >= 5}
-                      className="px-6 py-3 bg-[#780000] text-white rounded-xl font-semibold hover:bg-[#5a0000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {currentLevel >= 5 ? 'All Levels Complete!' : 'Next Level'}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </div>
+              <PatternComponent 
+                size={25 + index * 5}
+                color="#A67C52"
+                opacity={0.5}
+              />
+            </motion.div>
+          );
+        })}
+        
+        {/* Original leaf decorative elements for consistency */}
+        <LeafBranch 
+          className="absolute top-8 left-8 w-16 h-16 opacity-20"
+          style={{ color: '#A67C52' }}
+        />
+        <LeafBranch 
+          className="absolute top-8 right-8 w-16 h-16 opacity-20 transform scale-x-[-1]"
+          style={{ color: '#A67C52' }}
+        />
+        <HashGrid 
+          className="absolute bottom-16 right-16 w-8 h-8 opacity-15"
+          style={{ color: '#A67C52' }}
+        />
       </div>
 
-      {/* Level Modal */}
-      <AnimatePresence>
-        {showLevelModal && selectedModalLevel && (
-          <LevelModal
-            level={selectedModalLevel}
-            onClose={() => setShowLevelModal(false)}
-            onReplay={() => {
-              goToLevel(selectedModalLevel.id);
-              setShowLevelModal(false);
-            }}
-            onViewStats={() => {
-              // Handle view stats
-              setShowLevelModal(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Main Content */}
+      <main className="pt-20 min-h-screen relative z-10">
+        <div className="max-w-4xl mx-auto px-6 py-16">
+          
+          {/* Centered Container */}
+          <div className="max-w-2xl mx-auto text-center">
+            
+            {/* Main Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="font-headings text-5xl md:text-6xl font-bold mb-8 tracking-wide"
+              style={{ color: '#2C2C2C' }}
+            >
+              Let The AI Recreate
+            </motion.h1>
+
+            {/* Tagline */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+              className="font-body text-xl md:text-2xl italic mb-16 leading-relaxed"
+              style={{ color: '#6B7280' }}
+            >
+              Simply describe your idea, and let AI craft the design for you.
+            </motion.p>
+
+            {/* Input Area */}
+            <motion.form
+              onSubmit={handleSubmit}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
+              className="mb-8"
+            >
+              <div className="relative">
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Describe your vision... (e.g., 'Create a traditional Kolam with lotus petals and geometric patterns around a central mandala')"
+                  className="w-full h-40 px-8 py-6 rounded-2xl border-4 border-[#2C2C2C] bg-white resize-none font-body text-lg leading-relaxed transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#2C2C2C]/20 focus:border-[#2C2C2C]"
+                  style={{ 
+                    color: '#2C2C2C',
+                    boxShadow: '0 8px 25px rgba(44, 44, 44, 0.1)'
+                  }}
+                  disabled={isGenerating}
+                />
+                
+                {/* Focus glow effect */}
+                <div className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300 opacity-0 focus-within:opacity-100"
+                     style={{ 
+                       boxShadow: '0 0 20px rgba(44, 44, 44, 0.2)',
+                       background: 'transparent'
+                     }}
+                />
+              </div>
+
+              {/* Create Button */}
+              <motion.button
+                type="submit"
+                disabled={!inputValue.trim() || isGenerating}
+                className="mt-8 inline-flex items-center gap-3 px-12 py-4 rounded-full font-medium text-lg text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ 
+                  backgroundColor: '#8B4B4B',
+                  boxShadow: '0 4px 15px rgba(139, 75, 75, 0.3)'
+                }}
+                whileHover={!isGenerating && inputValue.trim() ? { 
+                  scale: 1.05,
+                  boxShadow: '0 8px 25px rgba(139, 75, 75, 0.4)',
+                  backgroundColor: '#7A4141'
+                } : {}}
+                whileTap={!isGenerating && inputValue.trim() ? { scale: 0.95 } : {}}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6, ease: 'easeOut' }}
+              >
+                {isGenerating ? (
+                  <>
+                    <KolamLoader color="#FFFFFF" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-6 h-6" />
+                    <span>Create</span>
+                  </>
+                )}
+              </motion.button>
+            </motion.form>
+
+            {/* Progress Bar */}
+            <AnimatePresence>
+              {isGenerating && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-6 w-full max-w-md mx-auto"
+                >
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ 
+                        background: 'linear-gradient(90deg, #8B4B4B, #A67C52, #8B4B4B)',
+                        backgroundSize: '200% 100%'
+                      }}
+                      animate={{
+                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                        width: ['0%', '70%', '100%']
+                      }}
+                      transition={{
+                        backgroundPosition: {
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear"
+                        },
+                        width: {
+                          duration: 8,
+                          ease: "easeInOut"
+                        }
+                      }}
+                    />
+                  </div>
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center mt-2 text-sm italic"
+                    style={{ color: '#6B7280' }}
+                  >
+                    Crafting your unique Kolam design...
+                  </motion.p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Results Section */}
+            {generatedResult && (
+              <motion.div
+                ref={resultsRef}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="mt-16 p-8 rounded-2xl border-2 border-[#A67C52] bg-white/80 backdrop-blur-sm"
+                style={{ boxShadow: '0 10px 25px rgba(166, 124, 82, 0.1)' }}
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <Palette className="w-8 h-8" style={{ color: '#8B4B4B' }} />
+                  <h3 className="text-2xl font-headings font-bold" style={{ color: '#2C2C2C' }}>
+                    Your AI-Generated Design
+                  </h3>
+                </div>
+
+                <p className="text-lg leading-relaxed mb-6" style={{ color: '#2C2C2C' }}>
+                  {generatedResult.explanation}
+                </p>
+
+                {generatedResult.image_base64 ? (
+                  <div className="rounded-xl overflow-hidden bg-gray-100">
+                    <img
+                      src={`data:image/png;base64,${generatedResult.image_base64}`}
+                      alt="Generated Kolam Design"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-gray-100 h-64 flex items-center justify-center">
+                    <p className="text-gray-500 italic">Generated image will appear here</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleClear}
+                  className="mt-6 px-6 py-2 rounded-full border-2 border-[#8B4B4B] text-[#8B4B4B] font-medium transition-all duration-300 hover:bg-[#8B4B4B] hover:text-white"
+                >
+                  Create Another
+                </button>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

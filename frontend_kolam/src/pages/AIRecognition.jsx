@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Camera, Palette, X, CheckCircle, AlertCircle, ZoomInIcon, LucideZoomIn } from 'lucide-react';
+import { Upload, Camera, X, CheckCircle, LucideZoomIn } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimatedPolygonGrid from '../components/AnimatedPolygonGrid';
 import { 

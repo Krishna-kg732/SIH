@@ -12,6 +12,11 @@ export default {
         accent: '#A91B3D',
         text: '#2C2C2C',
         'muted-blue': '#6B96B0',
+        // AI Recreation Page Colors
+        'warm-cream': '#F5F1EB',
+        'deep-burgundy': '#8B4B4B',
+        'soft-brown': '#A67C52',
+        'charcoal': '#2C2C2C',
       },
       fontFamily: {
         'body': ['Inter', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"'],
