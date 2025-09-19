@@ -12,29 +12,16 @@ import {
 import useActivityDetection from '../hooks/useActivityDetection';
 
 const AIRecognition = () => {
-  // 🔧 CONFIGURATION: Set your custom API endpoint here
-  // Leave as null to use default backend, or set to your custom URL
-  const CUSTOM_ANALYZE_API = null; // Example: 'https://your-api.com/analyze'
-  
   const [darkMode, setDarkMode] = useState(false);
   const [shouldSpin, setShouldSpin] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [uploadedFileBase64, setUploadedFileBase64] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [creationProgress, setCreationProgress] = useState(0);
   const [showLoadingPage, setShowLoadingPage] = useState(false);
   const { setInactivityCallback } = useActivityDetection(12000);
-
-  // Configure custom API endpoint if provided
-  useEffect(() => {
-    if (CUSTOM_ANALYZE_API) {
-      apiService.setCustomAnalyzeEndpoint(CUSTOM_ANALYZE_API);
-      console.log('🔧 Using custom analyze API:', CUSTOM_ANALYZE_API);
-    }
-  }, [CUSTOM_ANALYZE_API]);
 
   // Activity detection for background animations
   useEffect(() => {
@@ -43,16 +30,6 @@ const AIRecognition = () => {
       setTimeout(() => setShouldSpin(false), 8000);
     });
   }, [setInactivityCallback]);
-
-  // Convert file to base64
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
-    });
-  };
 
   // Handle drag events
   const handleDrag = useCallback((e) => {
@@ -66,7 +43,7 @@ const AIRecognition = () => {
   }, []);
 
   // Handle drop event
-  const handleDrop = useCallback(async (e) => {
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -75,64 +52,29 @@ const AIRecognition = () => {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
         setUploadedFile(file);
-        try {
-          const base64 = await convertToBase64(file);
-          setUploadedFileBase64(base64);
-          console.log('🔄 Image converted to base64:', {
-            fileName: file.name,
-            fileSize: file.size,
-            base64Length: base64.length
-          });
-        } catch (error) {
-          console.error('❌ Error converting file to base64:', error);
-        }
+        handleAnalysis(file);
       }
     }
   }, []);
 
   // Handle file input change
-  const handleFileInput = async (e) => {
+  const handleFileInput = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
         setUploadedFile(file);
-        try {
-          const base64 = await convertToBase64(file);
-          setUploadedFileBase64(base64);
-          console.log('🔄 Image converted to base64:', {
-            fileName: file.name,
-            fileSize: file.size,
-            base64Length: base64.length
-          });
-        } catch (error) {
-          console.error('❌ Error converting file to base64:', error);
-        }
+        handleAnalysis(file);
       }
     }
   };
 
   // AI analysis using real API
-  const handleAnalysis = async () => {
-    if (!uploadedFile || !uploadedFileBase64) {
-      alert('Please upload an image first');
-      return;
-    }
-
+  const handleAnalysis = async (file) => {
     setIsAnalyzing(true);
     setAnalysisResult(null);
     
     try {
-      console.log('🔍 Starting image analysis...', {
-        fileName: uploadedFile.name,
-        fileSize: uploadedFile.size,
-        customEndpoint: CUSTOM_ANALYZE_API,
-        hasBase64: !!uploadedFileBase64,
-        base64Preview: uploadedFileBase64 ? uploadedFileBase64.substring(0, 100) + '...' : null
-      });
-      
-      const result = await apiService.predictKolam(uploadedFile);
-      console.log('✅ Analysis result:', result);
-      
+      const result = await apiService.predictKolam(file);
       setAnalysisResult({
         pattern: result.label,
         confidence: Math.round(result.confidence),
@@ -142,7 +84,7 @@ const AIRecognition = () => {
         region: 'India' // Backend doesn't provide this yet
       });
     } catch (error) {
-      console.error('❌ Analysis failed:', error);
+      console.error('Analysis failed:', error);
       setAnalysisResult({
         pattern: 'Analysis Failed',
         confidence: 0,
@@ -201,7 +143,6 @@ const AIRecognition = () => {
 
   const handleClearFile = () => {
     setUploadedFile(null);
-    setUploadedFileBase64(null);
     setAnalysisResult(null);
     setIsAnalyzing(false);
   };
@@ -552,7 +493,7 @@ const AIRecognition = () => {
             {[
               { icon: Upload, label: 'Upload', action: handleUploadClick, disabled: false },
               { icon: Camera, label: 'Capture', action: handleCaptureClick, disabled: false },
-              { icon: LucideZoomIn, label: isAnalyzing ? 'Analyzing...' : 'Analyze', action: handleAnalysis, disabled: !uploadedFile || isAnalyzing }
+              { icon: LucideZoomIn, label: isCreating ? 'Creating...' : 'Analyze', action: handleCreateClick, disabled: !uploadedFile || isCreating }
             ].map((button, index) => (
               <motion.button
                 key={button.label}
