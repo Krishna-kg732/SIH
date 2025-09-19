@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import splashScreen from '../assets/images/splashScreen.gif';
+import splashScreen from '../assets/images/SplashScreen.gif';
 
 const LeftInteractive = ({ darkMode = false }) => {
   const [gifKey, setGifKey] = useState(0);
