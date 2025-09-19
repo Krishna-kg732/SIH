@@ -50,72 +50,63 @@ class ApiService {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Use custom endpoint if provided, otherwise use default
-    const endpoint = this.customAnalyzeEndpoint || '/api/v1/kolam/predict';
-    const useCustomUrl = this.customAnalyzeEndpoint && this.customAnalyzeEndpoint.startsWith('http');
+    // Use the official Kolam prediction API
+    const apiUrl = 'https://kartikeya.me/api/v1/kolam/predict';
     
-    if (useCustomUrl) {
-      // For custom external URLs, make direct fetch request
-      try {
-        const response = await fetch(this.customAnalyzeEndpoint, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Custom API request failed:', error);
-        throw error;
-      }
-    } else {
-      // Use default request method for relative endpoints
-      return this.request(endpoint, {
+    try {
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {}, // Remove Content-Type to let browser set it for FormData
         body: formData,
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Transform the API response to match our frontend expectations
+      return {
+        label: result.highest_scored_class || 'Unknown Pattern',
+        confidence: result.confidence || 0,
+        design_principle: result.related_design_principle || 'No design principle available'
+      };
+    } catch (error) {
+      console.error('Kolam prediction API request failed:', error);
+      throw error;
     }
   }
 
   async generateKolamFromDescription(query, generateImage = true) {
-    const endpoint = this.customCreateEndpoint || '/api/v1/kolam/knowledge';
-    const useCustomUrl = this.customCreateEndpoint && this.customCreateEndpoint.startsWith('http');
+    // Use the official Kolam knowledge/generation API
+    const apiUrl = 'https://kartikeya.me/api/v1/kolam/knowledge';
     
     const requestBody = {
       query,
       generate_image: generateImage,
     };
     
-    if (useCustomUrl) {
-      // For custom external URLs, make direct fetch request
-      try {
-        const response = await fetch(this.customCreateEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Custom create API request failed:', error);
-        throw error;
-      }
-    } else {
-      // Use default request method for relative endpoints
-      return this.request(endpoint, {
+    try {
+      const response = await fetch(apiUrl, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(requestBody),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Return the result as-is since the API should provide the expected format
+      // Typically this would include explanation and image_base64 fields
+      return result;
+    } catch (error) {
+      console.error('Kolam knowledge API request failed:', error);
+      throw error;
     }
   }
 

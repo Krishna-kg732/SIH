@@ -75,20 +75,33 @@ const AIRecognition = () => {
     
     try {
       const result = await apiService.predictKolam(file);
+      
+      // Handle successful response
       setAnalysisResult({
-        pattern: result.label,
-        confidence: Math.round(result.confidence),
-        description: result.design_principle,
+        pattern: result.label || 'Unknown Pattern',
+        confidence: result.confidence ? Math.round(result.confidence * 100) : 0,
+        description: result.design_principle || 'No design principle available',
         elements: ['Traditional Pattern', 'Cultural Heritage', 'Geometric Design', 'Artistic Expression'],
         difficulty: 'Intermediate', // Backend doesn't provide this yet
         region: 'India' // Backend doesn't provide this yet
       });
     } catch (error) {
       console.error('Analysis failed:', error);
+      
+      // Handle different types of errors
+      let errorMessage = 'Unable to analyze the image. Please try again with a clear Kolam pattern image.';
+      if (error.message.includes('404')) {
+        errorMessage = 'API endpoint not found. Please check the service configuration.';
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+      } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
       setAnalysisResult({
         pattern: 'Analysis Failed',
         confidence: 0,
-        description: 'Unable to analyze the image. Please try again with a clear Kolam pattern image.',
+        description: errorMessage,
         elements: ['Error'],
         difficulty: 'Unknown',
         region: 'Unknown'

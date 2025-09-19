@@ -80,22 +80,10 @@ const KolamLoader = ({ className, color = "#FFFFFF" }) => (
 );
 
 const RecreatePatterns = () => {
-  // 🔧 CONFIGURATION: Set your custom API endpoint here
-  // Leave as null to use default backend, or set to your custom URL
-  const CUSTOM_CREATE_API = null; // Example: 'https://your-api.com/generate'
-  
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState(null);
   const resultsRef = useRef(null);
-
-  // Configure custom API endpoint if provided
-  useEffect(() => {
-    if (CUSTOM_CREATE_API) {
-      apiService.setCustomCreateEndpoint(CUSTOM_CREATE_API);
-      console.log('🔧 Using custom create API:', CUSTOM_CREATE_API);
-    }
-  }, [CUSTOM_CREATE_API]);
 
   // Auto-scroll to results when image is generated
   useEffect(() => {
@@ -121,20 +109,41 @@ const RecreatePatterns = () => {
     try {
       console.log('🎨 Starting pattern generation...', {
         prompt: inputValue,
-        customEndpoint: CUSTOM_CREATE_API
+        apiEndpoint: 'https://kartikeya.me/api/v1/kolam/knowledge'
       });
       
-      // Use the centralized API service
+      // Use the centralized API service with the official API
       const result = await apiService.generateKolamFromDescription(inputValue, true);
       console.log('✅ Generation result:', result);
       
-      setGeneratedResult(result);
+      // Handle successful response
+      setGeneratedResult({
+        explanation: result.explanation || result.description || 'Pattern generated successfully',
+        image_base64: result.image_base64 || result.image || null,
+        // Add any additional fields that might be returned by the API
+        cultural_significance: result.cultural_significance,
+        traditional_elements: result.traditional_elements,
+        difficulty_level: result.difficulty_level
+      });
     } catch (error) {
       console.error('❌ Error generating design:', error);
-      // You can add proper error handling here
+      
+      // Handle different types of errors with specific messages
+      let errorMessage = "Sorry, there was an error generating your design. Please try again.";
+      if (error.message.includes('404')) {
+        errorMessage = "API endpoint not found. Please check the service configuration.";
+      } else if (error.message.includes('500')) {
+        errorMessage = "Server error occurred while generating the pattern. Please try again later.";
+      } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error.message.includes('timeout')) {
+        errorMessage = "Request timed out. The pattern generation is taking longer than expected. Please try again.";
+      }
+      
       setGeneratedResult({
-        explanation: "Sorry, there was an error generating your design. Please try again.",
-        image_base64: null
+        explanation: errorMessage,
+        image_base64: null,
+        error: true
       });
     } finally {
       setIsGenerating(false);
@@ -418,29 +427,29 @@ const RecreatePatterns = () => {
                 style={{ boxShadow: '0 10px 25px rgba(166, 124, 82, 0.1)' }}
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <Palette className="w-8 h-8" style={{ color: '#8B4B4B' }} />
+                  <Palette className="w-8 h-8" style={{ color: generatedResult.error ? '#DC2626' : '#8B4B4B' }} />
                   <h3 className="text-2xl font-headings font-bold" style={{ color: '#2C2C2C' }}>
-                    Your AI-Generated Design
+                    {generatedResult.error ? 'Generation Error' : 'Your AI-Generated Design'}
                   </h3>
                 </div>
 
-                <p className="text-lg leading-relaxed mb-6" style={{ color: '#2C2C2C' }}>
+                <p className={`text-lg leading-relaxed mb-6 ${generatedResult.error ? 'text-red-600' : ''}`} style={{ color: generatedResult.error ? '#DC2626' : '#2C2C2C' }}>
                   {generatedResult.explanation}
                 </p>
 
                 {generatedResult.image_base64 ? (
-                  <div className="rounded-xl overflow-hidden bg-gray-100">
+                  <div className="rounded-xl overflow-hidden bg-gray-100 shadow-lg">
                     <img
                       src={`data:image/png;base64,${generatedResult.image_base64}`}
                       alt="Generated Kolam Design"
                       className="w-full h-auto"
                     />
                   </div>
-                ) : (
+                ) : !generatedResult.error ? (
                   <div className="rounded-xl bg-gray-100 h-64 flex items-center justify-center">
                     <p className="text-gray-500 italic">Generated image will appear here</p>
                   </div>
-                )}
+                ) : null}
 
                 <button
                   onClick={handleClear}
