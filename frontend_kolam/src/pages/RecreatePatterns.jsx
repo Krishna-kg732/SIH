@@ -80,10 +80,22 @@ const KolamLoader = ({ className, color = "#FFFFFF" }) => (
 );
 
 const RecreatePatterns = () => {
+  // 🔧 CONFIGURATION: Set your custom API endpoint here
+  // Leave as null to use default backend, or set to your custom URL
+  const CUSTOM_CREATE_API = null; // Example: 'https://your-api.com/generate'
+  
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState(null);
   const resultsRef = useRef(null);
+
+  // Configure custom API endpoint if provided
+  useEffect(() => {
+    if (CUSTOM_CREATE_API) {
+      apiService.setCustomCreateEndpoint(CUSTOM_CREATE_API);
+      console.log('🔧 Using custom create API:', CUSTOM_CREATE_API);
+    }
+  }, [CUSTOM_CREATE_API]);
 
   // Auto-scroll to results when image is generated
   useEffect(() => {
@@ -107,11 +119,18 @@ const RecreatePatterns = () => {
     setIsGenerating(true);
     
     try {
+      console.log('🎨 Starting pattern generation...', {
+        prompt: inputValue,
+        customEndpoint: CUSTOM_CREATE_API
+      });
+      
       // Use the centralized API service
       const result = await apiService.generateKolamFromDescription(inputValue, true);
+      console.log('✅ Generation result:', result);
+      
       setGeneratedResult(result);
     } catch (error) {
-      console.error('Error generating design:', error);
+      console.error('❌ Error generating design:', error);
       // You can add proper error handling here
       setGeneratedResult({
         explanation: "Sorry, there was an error generating your design. Please try again.",

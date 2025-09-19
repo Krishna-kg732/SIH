@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Upload, Camera, X, CheckCircle, LucideZoomIn } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimatedPolygonGrid from '../components/AnimatedPolygonGrid';
+import apiService from '../services/apiService';
 import { 
   KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
   KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8,
@@ -11,16 +12,29 @@ import {
 import useActivityDetection from '../hooks/useActivityDetection';
 
 const AIRecognition = () => {
+  // 🔧 CONFIGURATION: Set your custom API endpoint here
+  // Leave as null to use default backend, or set to your custom URL
+  const CUSTOM_ANALYZE_API = null; // Example: 'https://your-api.com/analyze'
+  
   const [darkMode, setDarkMode] = useState(false);
   const [shouldSpin, setShouldSpin] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadedFileBase64, setUploadedFileBase64] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [creationProgress, setCreationProgress] = useState(0);
   const [showLoadingPage, setShowLoadingPage] = useState(false);
   const { setInactivityCallback } = useActivityDetection(12000);
+
+  // Configure custom API endpoint if provided
+  useEffect(() => {
+    if (CUSTOM_ANALYZE_API) {
+      apiService.setCustomAnalyzeEndpoint(CUSTOM_ANALYZE_API);
+      console.log('🔧 Using custom analyze API:', CUSTOM_ANALYZE_API);
+    }
+  }, [CUSTOM_ANALYZE_API]);
 
   // Activity detection for background animations
   useEffect(() => {
@@ -29,6 +43,16 @@ const AIRecognition = () => {
       setTimeout(() => setShouldSpin(false), 8000);
     });
   }, [setInactivityCallback]);
+
+  // Convert file to base64
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
 
   // Handle drag events
   const handleDrag = useCallback((e) => {
@@ -42,7 +66,7 @@ const AIRecognition = () => {
   }, []);
 
   // Handle drop event
-  const handleDrop = useCallback((e) => {
+  const handleDrop = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -51,39 +75,85 @@ const AIRecognition = () => {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
         setUploadedFile(file);
-        handleAnalysis(file);
+        try {
+          const base64 = await convertToBase64(file);
+          setUploadedFileBase64(base64);
+          console.log('🔄 Image converted to base64:', {
+            fileName: file.name,
+            fileSize: file.size,
+            base64Length: base64.length
+          });
+        } catch (error) {
+          console.error('❌ Error converting file to base64:', error);
+        }
       }
     }
   }, []);
 
   // Handle file input change
-  const handleFileInput = (e) => {
+  const handleFileInput = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
         setUploadedFile(file);
-        handleAnalysis(file);
+        try {
+          const base64 = await convertToBase64(file);
+          setUploadedFileBase64(base64);
+          console.log('🔄 Image converted to base64:', {
+            fileName: file.name,
+            fileSize: file.size,
+            base64Length: base64.length
+          });
+        } catch (error) {
+          console.error('❌ Error converting file to base64:', error);
+        }
       }
     }
   };
 
-  // Simulate AI analysis
-  const handleAnalysis = async (file) => {
+  // AI analysis using real API
+  const handleAnalysis = async () => {
+    if (!uploadedFile || !uploadedFileBase64) {
+      alert('Please upload an image first');
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisResult(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setAnalysisResult({
-        pattern: 'Traditional Pulli Kolam',
-        confidence: 92,
-        description: 'This is a beautiful traditional dot-based Kolam pattern featuring interconnected loops and curves. The symmetrical design represents prosperity and harmony.',
-        elements: ['Dots (Pulli)', 'Curved Lines', 'Symmetrical Design', 'Central Motif'],
-        difficulty: 'Intermediate',
-        region: 'Tamil Nadu'
+    try {
+      console.log('🔍 Starting image analysis...', {
+        fileName: uploadedFile.name,
+        fileSize: uploadedFile.size,
+        customEndpoint: CUSTOM_ANALYZE_API,
+        hasBase64: !!uploadedFileBase64,
+        base64Preview: uploadedFileBase64 ? uploadedFileBase64.substring(0, 100) + '...' : null
       });
-    }, 3000);
+      
+      const result = await apiService.predictKolam(uploadedFile);
+      console.log('✅ Analysis result:', result);
+      
+      setAnalysisResult({
+        pattern: result.label,
+        confidence: Math.round(result.confidence),
+        description: result.design_principle,
+        elements: ['Traditional Pattern', 'Cultural Heritage', 'Geometric Design', 'Artistic Expression'],
+        difficulty: 'Intermediate', // Backend doesn't provide this yet
+        region: 'India' // Backend doesn't provide this yet
+      });
+    } catch (error) {
+      console.error('❌ Analysis failed:', error);
+      setAnalysisResult({
+        pattern: 'Analysis Failed',
+        confidence: 0,
+        description: 'Unable to analyze the image. Please try again with a clear Kolam pattern image.',
+        elements: ['Error'],
+        difficulty: 'Unknown',
+        region: 'Unknown'
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // Handle button actions
@@ -131,6 +201,7 @@ const AIRecognition = () => {
 
   const handleClearFile = () => {
     setUploadedFile(null);
+    setUploadedFileBase64(null);
     setAnalysisResult(null);
     setIsAnalyzing(false);
   };
@@ -481,7 +552,7 @@ const AIRecognition = () => {
             {[
               { icon: Upload, label: 'Upload', action: handleUploadClick, disabled: false },
               { icon: Camera, label: 'Capture', action: handleCaptureClick, disabled: false },
-              { icon: LucideZoomIn, label: isCreating ? 'Creating...' : 'Analyze', action: handleCreateClick, disabled: !uploadedFile || isCreating }
+              { icon: LucideZoomIn, label: isAnalyzing ? 'Analyzing...' : 'Analyze', action: handleAnalysis, disabled: !uploadedFile || isAnalyzing }
             ].map((button, index) => (
               <motion.button
                 key={button.label}

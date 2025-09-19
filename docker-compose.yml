@@ -1,6 +1,42 @@
 version: '3.8'
 
 services:
+  # Main Kolam Application (Frontend + Backend)
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"      # Frontend (nginx)
+      - "8000:8000"  # Backend API (direct access)
+    env_file:
+      - .env.docker
+    environment:
+      - DATABASE_URL=postgresql://kolam_user:kolam_password@postgres:5432/kolam_db
+      - OPENSEARCH_URL=http://opensearch:9200
+      - REDIS_URL=redis://redis:6379
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - SECRET_KEY=kolam-secret-key-change-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - ./generated_images:/app/generated_images
+      - ./models:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine

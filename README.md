@@ -2,47 +2,141 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-19+-61DAFB.svg)](https://reactjs.org)
+[![Security](https://img.shields.io/badge/Security-Hardened-red.svg)](docs/security/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Development-orange.svg)]()
 
-An AI-powered platform for learning, exploring, and celebrating the traditional Indian art of Kolam (also known as muggu, rangoli, and rangavalli). This platform blends cultural heritage with modern technology to provide interactive learning experiences.
+An AI-powered platform for learning, exploring, and celebrating the traditional Indian art of Kolam. This platform blends cultural heritage with modern technology to provide interactive learning experiences.
 
 ## ✨ Features
 
 ### 🧠 AI-Powered Capabilities
-- **Kolam Detection**: Upload images and get AI-powered analysis of Kolam patterns
-- **Pattern Generation**: Create new Kolam designs using mathematical principles and AI
-- **Smart Recognition**: Identify traditional patterns and their cultural significance
-- **AI-Powered Insights**: Get explanations and hints using local LLMs
+- **Pattern Recognition**: Upload images and get AI analysis of Kolam patterns
+- **Smart Generation**: Create new designs using AI from text descriptions
+- **Cultural Insights**: Learn about traditional patterns and their significance
+- **Interactive Learning**: Duolingo-style quizzes and progress tracking
 
-### 📚 Interactive Learning
-- **Duolingo-style Quizzes**: Progressive learning with gamified elements
-- **Progress Tracking**: Monitor your learning journey and achievements
-- **Cultural Context**: Learn about the history and meaning behind patterns
-- **Difficulty Levels**: From beginner to advanced patterns
+### 🎯 Core Functionality
+- **AI Recognition**: Analyze uploaded Kolam images with cultural context
+- **Pattern Recreation**: Generate patterns from descriptions
+- **Quiz System**: Interactive learning with gamified elements
+- **Progress Tracking**: Monitor learning journey and achievements
 
-### 🌐 Community Features
-- **Pattern Sharing**: Share your creations with the community
-- **Learning from Others**: Discover patterns created by fellow learners
-- **Collaborative Learning**: Work together on complex designs
-- **Cultural Exchange**: Connect with people passionate about traditional art
-
-### 🔧 Technical Features
-- **Real-time Processing**: Fast image analysis and generation
-- **Offline Capability**: Works without internet using local AI models
-- **Cross-platform**: Web, mobile, and desktop support
-- **Scalable Architecture**: Built for growth and performance
+### 🔐 Enterprise Security
+- **File Upload Security**: Comprehensive validation and malware scanning
+- **Rate Limiting**: DoS protection with configurable limits
+- **Input Validation**: SQL injection and XSS prevention
+- **Security Headers**: Complete security header implementation
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.11 or higher
-- [uv](https://github.com/astral-sh/uv) package manager
-- Git
+### 📦 One-Click Setup
 
-### Option 1: SQLite (Recommended for Development)
+```bash
+# 1. Clone and setup backend
+git clone https://github.com/Krishna-kg732/SIH.git
+cd SIH
+pip install -r requirements.txt
+cp env.example .env
 
-**No database setup required!** The application works out of the box with SQLite.
+# 2. Start backend
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 3. Deploy frontend to Vercel
+cd frontend_kolam
+npm install
+vercel --prod
+```
+
+**🌐 Access Your App:**
+- Frontend: `https://your-app.vercel.app`
+- Backend API: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+
+### 📖 Detailed Setup
+
+For complete deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**
+
+## 🏗️ Architecture
+
+```
+Frontend (Vercel)          Backend (Local)
+┌─────────────────┐       ┌─────────────────┐
+│   React + Vite  │──────▶│   FastAPI       │
+│   Tailwind CSS  │       │   SQLAlchemy    │
+│   Framer Motion │       │   AI Services   │
+└─────────────────┘       └─────────────────┘
+```
+
+## 🎯 Key Pages & Features
+
+| Page | Endpoint | Description |
+|------|----------|-------------|
+| **AI Recognition** | `/ai-recognition` | Upload and analyze Kolam patterns |
+| **Pattern Recreation** | `/recreate` | Generate patterns from descriptions |
+| **Quiz System** | `/quiz` | Interactive learning modules |
+| **Levels** | `/levels` | Progress tracking and challenges |
+
+## 🔌 API Integration
+
+The frontend seamlessly integrates with the backend through:
+
+- **Pattern Analysis**: `POST /api/v1/kolam/predict`
+- **Pattern Generation**: `POST /api/v1/kolam/knowledge`
+- **Quiz System**: `GET /api/v1/learning/quizzes`
+- **User Progress**: `GET /api/v1/learning/progress`
+
+## �️ Security Features
+
+This platform includes enterprise-grade security:
+
+- ✅ **Secure File Uploads** with type validation and malware scanning
+- ✅ **Rate Limiting** (60 req/min, 1000 req/hour per IP)
+- ✅ **CORS Protection** with explicit origin whitelist
+- ✅ **Input Sanitization** preventing SQL injection and XSS
+- ✅ **Security Headers** (XSS protection, clickjacking prevention)
+
+## 📚 Documentation
+
+- **[Deployment Guide](DEPLOYMENT.md)** - Complete setup instructions
+- **[API Documentation](docs/api/)** - Endpoint details and examples
+- **[Security Guide](docs/security/)** - Security features and testing
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+## 🧪 Testing
+
+```bash
+# Backend health check
+curl http://localhost:8000/health
+
+# Security test suite
+python test_security.py
+
+# Frontend development
+cd frontend_kolam && npm run dev
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Traditional Kolam artists and cultural heritage
+- Open source AI and ML communities
+- FastAPI and React ecosystems
+
+---
+
+**🚀 Ready to explore Kolam art with AI?** Follow the [deployment guide](DEPLOYMENT.md) to get started!
 
 ```bash
 # Clone the repository

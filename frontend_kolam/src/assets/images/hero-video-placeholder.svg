@@ -1,8 +1,0 @@
-<!-- TODO: Replace with actual hero video thumbnail -->
-<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="400" height="300" rx="16" fill="#FAF9F7" stroke="#8B4513" stroke-width="2"/>
-  <circle cx="200" cy="150" r="30" fill="#8B4513" opacity="0.1"/>
-  <polygon points="190,135 190,165 215,150" fill="#8B4513"/>
-  <text x="200" y="190" font-family="Inter, sans-serif" font-size="14" text-anchor="middle" fill="#8B4513">Video Placeholder</text>
-  <text x="200" y="210" font-family="Inter, sans-serif" font-size="12" text-anchor="middle" fill="#A0522D">400x300</text>
-</svg>

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from src.core.config import settings
 from src.core.logging import configure_logging, get_logger
 from src.core.database import engine, Base
+from src.core.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from src.api import auth, kolam, learning, users
 
 
@@ -45,19 +46,44 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     
-    # Add middleware
+    # Configure CORS properly for production security
+    if settings.debug:
+        # Development mode - more permissive but still secure
+        cors_origins = [
+            "http://localhost:3000",
+            "http://localhost:5173", 
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173"
+        ]
+    else:
+        # Production mode - strict origins only
+        cors_origins = [
+            "https://your-kolam-app.vercel.app",  # Replace with actual Vercel domain
+            "https://*.vercel.app"  # Vercel preview deployments
+        ]
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.debug else ["https://yourdomain.com"],
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],  # Explicit methods only
+        allow_headers=["Content-Type", "Authorization", "Accept"],  # Explicit headers only
+        max_age=3600,  # Cache preflight for 1 hour
     )
     
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["*"] if settings.debug else ["yourdomain.com"]
+        allowed_hosts=["localhost", "127.0.0.1"] if settings.debug else ["your-kolam-app.vercel.app"]
     )
+    
+    # Add security middleware
+    app.add_middleware(SecurityHeadersMiddleware)
+    
+    # Add rate limiting (more permissive in debug mode)
+    if settings.debug:
+        app.add_middleware(RateLimitMiddleware, calls_per_minute=120, calls_per_hour=2000)
+    else:
+        app.add_middleware(RateLimitMiddleware, calls_per_minute=60, calls_per_hour=1000)
     
     # Include routers
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
@@ -102,9 +128,16 @@ def create_app() -> FastAPI:
             path=request.url.path,
             exc_info=True
         )
+        
+        # In production, return generic error message
+        if settings.debug:
+            detail = f"Internal server error: {str(exc)}"
+        else:
+            detail = "Internal server error occurred"
+        
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Internal server error"}
+            content={"detail": detail}
         )
     
     return app

@@ -1,4 +1,4 @@
-# Git ignore file
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,33 +21,91 @@ wheels/
 *.egg
 MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
 
-# Unit test / coverage reports
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Database
+*.db
+*.sqlite3
+*.db-journal
+
+# File uploads
+uploads/
+generated_images/
+models/
+temp/
+
+# Documentation (keep only essential docs in repo)
+docs/
+TROUBLESHOOTING.md
+API_ENDPOINT_MAPPING.md
+API_QUICK_REFERENCE.md
+VERCEL_LOCAL_SETUP.md
+DOCKER_DEPLOYMENT.md
+SECURITY_AUDIT_REPORT.md
+
+# Testing
+.pytest_cache/
+.coverage
 htmlcov/
 .tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
 coverage.xml
 *.cover
-.hypothesis/
-.pytest_cache/
 
-# Translations
-*.mo
-*.pot
+# Docker
+.dockerignore
 
-# Django stuff:
-*.log
-local_settings.py
+# Jupyter
+.ipynb_checkpoints/
+
+# Node.js (for frontend)
+node_modules/
+.npm
+*.tgz
+
+# Build outputs
+dist/
+build/
+
+# AI/ML models
+*.pkl
+*.joblib
+*.h5
+*.pb
+
+# Security
+test_security.py
 db.sqlite3
 
 # Flask stuff:
@@ -149,4 +207,9 @@ generated_images/
 
 #sql databases
 kolam.db
+
+# Documentation files (development/internal)
+frontend_kolam/ROUTING_DOCUMENTATION.md
+frontend_kolam/TODO.md
+frontend_kolam/TESTING_GUIDE.md
 

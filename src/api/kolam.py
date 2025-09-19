@@ -1,6 +1,7 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from pathlib import Path
 import uuid
+import os
 
 from src.schemas import (
     KolamGenerationRequest,
@@ -12,6 +13,8 @@ from src.schemas import (
 
 from src.services.ai.detection_service import model, classes, predict_image
 from src.services.ai.generation_service import query_knowledge_and_generate
+from src.core.file_security import FileValidator, scan_file_for_malware
+from src.core.config import settings
 
 
 router = APIRouter(prefix="/kolam", tags=["Kolam"])
@@ -76,13 +79,31 @@ async def predict_kolam(file: UploadFile = File(...)):
     - Related design principle
     """
     try:
-        uploads_dir = Path("uploads")
+        # Validate file before processing
+        FileValidator.validate_file(file)
+        
+        # Create secure upload directory
+        uploads_dir = Path(settings.upload_dir)
         uploads_dir.mkdir(parents=True, exist_ok=True)
 
+        # Generate secure file path
+        temp_path = FileValidator.create_secure_upload_path(uploads_dir, file.filename)
+        
         # Save uploaded file
-        temp_path = uploads_dir / f"{uuid.uuid4()}_{file.filename}"
         with temp_path.open("wb") as f:
-            f.write(await file.read())
+            content = await file.read()
+            f.write(content)
+        
+        # Validate file content
+        FileValidator.validate_file_content(temp_path)
+        
+        # Scan for malware
+        if not scan_file_for_malware(temp_path):
+            temp_path.unlink()  # Delete suspicious file
+            raise HTTPException(
+                status_code=400, 
+                detail="File failed security scan"
+            )
 
         # Predict top-1 class
         preds = predict_image(model, temp_path, classes, topk=1)
@@ -92,6 +113,12 @@ async def predict_kolam(file: UploadFile = File(...)):
         principle = DESIGN_PRINCIPLES.get(
             label.lower(), "No design principle found for this class."
         )
+        
+        # Clean up temporary file
+        try:
+            temp_path.unlink()
+        except Exception:
+            pass  # File cleanup is best effort
 
         return PredictionResponse(
             label=label,
@@ -99,8 +126,13 @@ async def predict_kolam(file: UploadFile = File(...)):
             design_principle=principle,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Internal server error occurred during image processing"
+        )
 
 # ---------- Knowledge + Generation ----------
 @router.post("/knowledge", response_model=KnowledgeResponse)

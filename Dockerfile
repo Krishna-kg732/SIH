@@ -1,4 +1,23 @@
-FROM python:3.11-slim
+# Multi-stage Dockerfile for Kolam Application
+# Stage 1: Build Frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend_kolam/package.json frontend_kolam/package-lock.json* ./
+
+# Install frontend dependencies
+RUN npm ci --only=production
+
+# Copy frontend source code
+COPY frontend_kolam/ ./
+
+# Build frontend for production
+RUN npm run build
+
+# Stage 2: Backend with Frontend
+FROM python:3.11-slim AS production
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -22,26 +41,42 @@ RUN apt-get update \
         libxrender-dev \
         libgomp1 \
         curl \
+        nginx \
+        supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock* ./
 RUN pip install --no-cache-dir uv
 RUN uv sync --frozen
 
-# Copy project
-COPY . .
+# Copy backend source code
+COPY src/ ./src/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+COPY scripts/ ./scripts/
+
+# Copy frontend build from previous stage
+COPY --from=frontend-builder /app/frontend/dist /app/static
 
 # Create necessary directories
-RUN mkdir -p uploads generated_images models logs
+RUN mkdir -p uploads generated_images models logs /var/log/supervisor
 
-# Expose port
-EXPOSE 8000
+# Configure nginx for serving frontend and proxying API
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/supervisor.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create startup script
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Expose ports
+EXPOSE 80 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:80/health || exit 1
 
-# Run the application
-CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application with supervisor
+CMD ["/start.sh"]
 
