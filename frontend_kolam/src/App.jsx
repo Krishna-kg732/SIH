@@ -6,6 +6,7 @@ import StartGame from './pages/StartGame';
 import Levels from './pages/Levels';
 import QuizQuestion from './pages/QuizQuestion';
 import AIRecognition from './pages/AIRecognition';
+import RecreatePatterns from './pages/RecreatePatterns';
 import './index.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/levels" element={<Levels />} />
         <Route path="/quiz/:levelId" element={<QuizQuestion />} />
         <Route path="/ai-recognition" element={<AIRecognition />} />
+        <Route path="/recreate-patterns" element={<RecreatePatterns />} />
       </Routes>
     </Router>
   );
