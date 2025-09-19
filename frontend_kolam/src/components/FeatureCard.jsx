@@ -18,7 +18,7 @@ const FeatureCard = ({
         group ${className} ${
           darkMode 
             ? 'bg-gray-800 border-gray-700 hover:border-primary hover:bg-gray-700' 
-            : 'bg-white border-gray-100 hover:border-primary hover:bg-gray-50'
+            : 'bg-white border-gray-100 hover:border-primary hover:bg-background'
         }
       `}
       style={{

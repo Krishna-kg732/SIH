@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { ArrowRight, ExternalLink, Brain, Eye, Palette } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimatedPolygonGrid from '../components/AnimatedPolygonGrid';
 import LeftInteractive from '../components/LeftInteractive';
@@ -9,6 +9,37 @@ import logoSvg from '../assets/images/logo.svg';
 
 const Landing = () => {
   const [darkMode, setDarkMode] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const featuresRef = useRef(null);
+  const isInView = useInView(featuresRef, { once: false, margin: "-100px" });
+  
+  // Track scroll interaction with timeout
+  useEffect(() => {
+    let scrollTimeout;
+    
+    const handleScroll = () => {
+      setHasScrolled(true);
+      
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      
+      // Set timeout to reset scroll state after 3 seconds of no scrolling
+      scrollTimeout = setTimeout(() => {
+        setHasScrolled(false);
+      }, 3000);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -32,7 +63,7 @@ const Landing = () => {
       <AnimatedPolygonGrid darkMode={darkMode} />
       
       {/* Navigation */}
-      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <Navbar darkMode={darkMode} />
       
       {/* Main Content */}
       <main className="pt-20 min-h-screen">
@@ -144,6 +175,256 @@ const Landing = () => {
         </div>
       </main>
       
+      {/* Our Features Section */}
+      <motion.section 
+        ref={featuresRef}
+        className={`relative z-10 py-16 px-8 lg:px-16 border-t transition-all duration-500 ${
+          darkMode
+            ? 'border-gray-700'
+            : 'border-gray-200'
+        }`}
+        style={{
+          background: darkMode 
+            ? 'rgba(17, 24, 39, 0.85)' 
+            : 'rgba(255, 255, 255, 0.75)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ 
+          opacity: isInView ? 1 : 0.7, 
+          y: isInView ? 0 : 30,
+          scale: hasScrolled && isInView ? 1.02 : 1
+        }}
+        transition={{ 
+          duration: 0.8, 
+          delay: 0.2,
+          scale: { duration: 0.3 }
+        }}
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <motion.div 
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ 
+              opacity: isInView ? 1 : 0,
+              y: isInView ? 0 : 30,
+              scale: hasScrolled && isInView ? 1.05 : 1
+            }}
+            transition={{ 
+              duration: 0.8, 
+              delay: 0.4,
+              scale: { duration: 0.3 }
+            }}
+          >
+            <h2 className={`font-headings text-3xl md:text-4xl font-bold mb-4 transition-colors duration-300 ${
+              darkMode ? 'text-white' : 'text-[#780000]'
+            }`}>
+              Our Features
+            </h2>
+            <p className={`text-lg transition-colors duration-300 ${
+              darkMode ? 'text-gray-300' : 'text-[#a91b3d]'
+            }`}>
+              Discover the power of AI-enhanced Kolam pattern recognition and creation
+            </p>
+          </motion.div>
+          
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-3 gap-8">
+            
+            {/* Test Your Knowledge Feature */}
+            <motion.div
+              className={`group p-8 rounded-2xl transition-all duration-500 hover:scale-105 ${
+                darkMode
+                  ? 'hover:bg-gray-700/50 border border-gray-600/30'
+                  : 'hover:bg-white/60 border border-gray-300/30'
+              }`}
+              style={{
+                background: darkMode 
+                  ? 'rgba(31, 41, 55, 0.6)' 
+                  : 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                boxShadow: darkMode 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                  : '0 8px 32px rgba(120, 0, 0, 0.1)',
+              }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ 
+                opacity: isInView ? 1 : 0,
+                y: isInView ? 0 : 30,
+                rotateY: hasScrolled && isInView ? 5 : 0
+              }}
+              transition={{ 
+                duration: 0.6, 
+                delay: 0.6,
+                rotateY: { duration: 0.4 }
+              }}
+              whileHover={{ y: -8, rotateY: 10 }}
+            >
+              <motion.div 
+                className={`w-16 h-16 rounded-xl mb-6 flex items-center justify-center transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-red-900/50 text-red-400' 
+                    : 'bg-[#780000]/10 text-[#780000]'
+                }`}
+                animate={{
+                  rotate: hasScrolled && isInView ? [0, 10, -10, 0] : 0
+                }}
+                transition={{ duration: 0.6 }}
+              >
+                <Brain className="w-8 h-8" />
+              </motion.div>
+              
+              <h3 className={`font-headings text-xl font-bold mb-4 transition-colors duration-300 ${
+                darkMode ? 'text-white' : 'text-[#780000]'
+              }`}>
+                Test Your Knowledge
+              </h3>
+              
+              <p className={`text-base leading-relaxed transition-colors duration-300 ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Challenge yourself with interactive quizzes about Kolam patterns, cultural significance, and traditional designs. Learn while you play!
+              </p>
+              
+              <div className={`mt-6 text-sm font-medium transition-colors duration-300 ${
+                darkMode ? 'text-red-400' : 'text-[#a91b3d]'
+              }`}>
+                Interactive Learning Experience
+              </div>
+            </motion.div>
+            
+            {/* AI Recognition Feature */}
+            <motion.div
+              className={`group p-8 rounded-2xl transition-all duration-500 hover:scale-105 ${
+                darkMode
+                  ? 'hover:bg-gray-700/50 border border-gray-600/30'
+                  : 'hover:bg-white/60 border border-gray-300/30'
+              }`}
+              style={{
+                background: darkMode 
+                  ? 'rgba(31, 41, 55, 0.6)' 
+                  : 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                boxShadow: darkMode 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                  : '0 8px 32px rgba(120, 0, 0, 0.1)',
+              }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ 
+                opacity: isInView ? 1 : 0,
+                y: isInView ? 0 : 30,
+                rotateY: hasScrolled && isInView ? -5 : 0
+              }}
+              transition={{ 
+                duration: 0.6, 
+                delay: 0.8,
+                rotateY: { duration: 0.4 }
+              }}
+              whileHover={{ y: -8, rotateY: -10 }}
+            >
+              <motion.div 
+                className={`w-16 h-16 rounded-xl mb-6 flex items-center justify-center transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-red-900/50 text-red-400' 
+                    : 'bg-[#780000]/10 text-[#780000]'
+                }`}
+                animate={{
+                  scale: hasScrolled && isInView ? [1, 1.1, 1] : 1
+                }}
+                transition={{ duration: 0.6 }}
+              >
+                <Eye className="w-8 h-8" />
+              </motion.div>
+              
+              <h3 className={`font-headings text-xl font-bold mb-4 transition-colors duration-300 ${
+                darkMode ? 'text-white' : 'text-[#780000]'
+              }`}>
+                Let AI Recognize
+              </h3>
+              
+              <p className={`text-base leading-relaxed transition-colors duration-300 ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Upload or draw Kolam patterns and let our advanced AI analyze and identify the design, providing cultural context and historical information.
+              </p>
+              
+              <div className={`mt-6 text-sm font-medium transition-colors duration-300 ${
+                darkMode ? 'text-red-400' : 'text-[#a91b3d]'
+              }`}>
+                Smart Pattern Recognition
+              </div>
+            </motion.div>
+            
+            {/* Recreate/Complete Patterns Feature */}
+            <motion.div
+              className={`group p-8 rounded-2xl transition-all duration-500 hover:scale-105 ${
+                darkMode
+                  ? 'hover:bg-gray-700/50 border border-gray-600/30'
+                  : 'hover:bg-white/60 border border-gray-300/30'
+              }`}
+              style={{
+                background: darkMode 
+                  ? 'rgba(31, 41, 55, 0.6)' 
+                  : 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                boxShadow: darkMode 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                  : '0 8px 32px rgba(120, 0, 0, 0.1)',
+              }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ 
+                opacity: isInView ? 1 : 0,
+                y: isInView ? 0 : 30,
+                rotateY: hasScrolled && isInView ? 5 : 0
+              }}
+              transition={{ 
+                duration: 0.6, 
+                delay: 1.0,
+                rotateY: { duration: 0.4 }
+              }}
+              whileHover={{ y: -8, rotateY: 10 }}
+            >
+              <motion.div 
+                className={`w-16 h-16 rounded-xl mb-6 flex items-center justify-center transition-colors duration-300 ${
+                  darkMode 
+                    ? 'bg-red-900/50 text-red-400' 
+                    : 'bg-[#780000]/10 text-[#780000]'
+                }`}
+                animate={{
+                  rotate: hasScrolled && isInView ? [0, -15, 15, 0] : 0
+                }}
+                transition={{ duration: 0.8 }}
+              >
+                <Palette className="w-8 h-8" />
+              </motion.div>
+              
+              <h3 className={`font-headings text-xl font-bold mb-4 transition-colors duration-300 ${
+                darkMode ? 'text-white' : 'text-[#780000]'
+              }`}>
+                Recreate & Complete
+              </h3>
+              
+              <p className={`text-base leading-relaxed transition-colors duration-300 ${
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Practice creating Kolam patterns step-by-step or complete partial designs. Perfect your skills with guided tutorials and AI assistance.
+              </p>
+              
+              <div className={`mt-6 text-sm font-medium transition-colors duration-300 ${
+                darkMode ? 'text-red-400' : 'text-[#a91b3d]'
+              }`}>
+                Hands-on Pattern Creation
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Footer with Logo */}
       <motion.footer 
         className={`relative z-10 py-8 px-8 lg:px-16 border-t transition-colors duration-300 ${

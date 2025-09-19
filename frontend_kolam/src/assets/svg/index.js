@@ -1,0 +1,10 @@
+export { default as KolamPattern1 } from './KolamPattern1';
+export { default as KolamPattern2 } from './KolamPattern2';
+export { default as KolamPattern3 } from './KolamPattern3';
+export { default as KolamPattern4 } from './KolamPattern4';
+export { default as KolamPattern5 } from './KolamPattern5';
+export { default as KolamPattern6 } from './KolamPattern6';
+export { default as KolamPattern7 } from './KolamPattern7';
+export { default as KolamPattern8 } from './KolamPattern8';
+export { default as KolamPattern9 } from './KolamPattern9';
+export { default as KolamPattern10 } from './KolamPattern10';

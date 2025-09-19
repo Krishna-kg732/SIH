@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Sun } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Navbar = ({ darkMode, toggleDarkMode }) => {
+const Navbar = ({ darkMode }) => {
   const location = useLocation();
   
   const navItems = [
@@ -43,10 +42,12 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
                   delay: index * 0.1,
                   ease: 'easeOut'
                 }}
+                whileHover="hover"
+                className="relative"
               >
                 <Link
                   to={item.path}
-                  className={`font-medium transition-colors duration-200 relative group ${
+                  className={`font-medium transition-colors duration-200 relative group block ${
                     isActive(item.path)
                       ? darkMode 
                         ? 'text-red-400' 
@@ -59,34 +60,20 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
                   {item.name}
                   {/* Smooth underline animation */}
                   <motion.div
-                    className={`absolute -bottom-1 left-0 h-0.5 transition-colors duration-200 ${
-                      isActive(item.path)
-                        ? darkMode ? 'bg-red-400' : 'bg-primary'
-                        : darkMode ? 'bg-red-400' : 'bg-primary'
-                    }`}
+                    className="absolute -bottom-1 left-0 h-0.5"
+                    style={{
+                      backgroundColor: darkMode ? '#ef4444' : '#500000'
+                    }}
                     initial={{ width: isActive(item.path) ? '100%' : 0 }}
-                    whileHover={{ width: '100%' }}
+                    variants={{
+                      hover: { width: '100%' }
+                    }}
                     transition={{ duration: 0.3, ease: 'easeOut' }}
                   />
                 </Link>
               </motion.div>
             ))}
           </div>
-
-          {/* Dark Mode Toggle */}
-          <motion.button
-            onClick={toggleDarkMode}
-            className={`ml-8 p-2 rounded-xl transition-colors duration-200 ${
-              darkMode 
-                ? 'bg-gray-700 text-red-400 hover:bg-gray-600' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Toggle dark mode"
-          >
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </motion.button>
 
           {/* Mobile Menu Button */}
           <motion.button

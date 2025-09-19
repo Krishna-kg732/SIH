@@ -1,16 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Trophy, Target, Play, User } from 'lucide-react';
+import { Lock, Trophy, Target, Play, User, Home } from 'lucide-react';
+import { 
+  KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+  KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8,
+  KolamPattern9, KolamPattern10
+} from '../assets/svg';
+import useActivityDetection from '../hooks/useActivityDetection';
 
 const StartGame = () => {
   const navigate = useNavigate();
+  const [shouldSpin, setShouldSpin] = useState(false);
+  const { setInactivityCallback } = useActivityDetection(12000);
   const [userProgress, setUserProgress] = useState({
     currentLevel: 1,
     completedLevels: [],
     accuracy: 0,
     username: "Kushagra Chaudhary"
   });
+
+  useEffect(() => {
+    setInactivityCallback(() => {
+      setShouldSpin(true);
+      // Reset spinning after 4 seconds
+      setTimeout(() => setShouldSpin(false), 4000);
+    });
+  }, [setInactivityCallback]);
 
   // Load user progress from localStorage
   useEffect(() => {
@@ -82,19 +98,8 @@ const StartGame = () => {
     const state = getLevelState(levelId);
     if (state === 'locked') return;
     
-    // Simulate completing a level for demo purposes
-    if (state === 'current') {
-      const newProgress = {
-        ...userProgress,
-        completedLevels: [...userProgress.completedLevels, levelId],
-        currentLevel: Math.min(levelId + 1, 5),
-        accuracy: 85
-      };
-      setUserProgress(newProgress);
-      localStorage.setItem('kolamVisionProgress', JSON.stringify(newProgress));
-    }
-    
-    console.log(`Starting level ${levelId}`);
+    // Navigate to quiz for the selected level
+    navigate(`/quiz/${levelId}`);
   };
 
   const handleStartGame = () => {
@@ -179,16 +184,90 @@ const StartGame = () => {
   const paths = levels.slice(0, -1).map((_, index) => createPath(index, index + 1));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background relative">
+      {/* Background Floating Kolam Patterns */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[
+          KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+          KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8
+        ].map((PatternComponent, i) => (
+          <motion.div
+            key={`bg-pattern-${i}`}
+            className="absolute opacity-5"
+            style={{
+              left: `${15 + (i * 12)}%`,
+              top: `${10 + (i * 12)}%`,
+            }}
+            animate={{
+              x: [0, 20, 0],
+              y: [0, -15, 0],
+              rotate: shouldSpin ? [0, 360] : [0, 90, 180, 270, 360],
+            }}
+            transition={{
+              duration: shouldSpin ? 1.5 : 25 + Math.random() * 15,
+              repeat: shouldSpin ? 3 : Infinity,
+              ease: shouldSpin ? "easeInOut" : "linear",
+              delay: shouldSpin ? i * 0.2 : i * 2,
+            }}
+          >
+            <PatternComponent 
+              size={60 + Math.random() * 30}
+              color="#780000"
+              opacity={0.1}
+            />
+          </motion.div>
+        ))}
+        
+        {/* Additional smaller patterns */}
+        {[...Array(8)].map((_, i) => {
+          const PatternComponent = [
+            KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+            KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8,
+            KolamPattern9, KolamPattern10
+          ][i % 10];
+          return (
+            <motion.div
+              key={`small-pattern-${i}`}
+              className="absolute opacity-3"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                x: [0, -10, 0],
+                y: [0, 10, 0],
+                rotate: shouldSpin ? [0, 360] : [0, -180, 0],
+              }}
+              transition={{
+                duration: shouldSpin ? 1 : 30 + Math.random() * 20,
+                repeat: shouldSpin ? 2 : Infinity,
+                ease: shouldSpin ? "easeInOut" : "linear",
+                delay: shouldSpin ? Math.random() * 2 : Math.random() * 10,
+              }}
+            >
+              <PatternComponent 
+                size={25 + Math.random() * 15}
+                color="#a91b3d"
+                opacity={0.08}
+              />
+            </motion.div>
+          );
+        })}
+      </div>
+
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-sm border-b border-gray-200 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* App Title */}
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Kolam Vision</h1>
-              <p className="text-sm text-gray-600">Master the art of pattern recognition</p>
-            </div>
+            {/* Home Button */}
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-[#780000] transition-colors duration-200 rounded-lg hover:bg-gray-100"
+              aria-label="Go to home page"
+            >
+              <Home size={20} />
+              <span className="font-medium">Home</span>
+            </button>
             
             {/* User Profile */}
             <div className="flex items-center space-x-4">
@@ -216,9 +295,9 @@ const StartGame = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Level Map Container - light background with dot grid */}
-        <div className="bg-gray-50 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+        <div className="bg-background rounded-2xl shadow-xl overflow-hidden border border-gray-200">
           <div className="p-8 lg:p-12">
             {/* Level Map - 10x6 Grid System (900x420px) */}
             <div className="relative mx-auto" style={{ width: '900px', height: '420px' }}>

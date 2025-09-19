@@ -12,7 +12,7 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
   };
 
   const getButtonText = () => {
-    return "START GAME";
+    return "CHOOSE LEVEL";
   };
 
   const getSubtitleText = () => {
@@ -28,13 +28,14 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
       {/* Icon and Title */}
       <div className="mb-6">
         <motion.div
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-red-300 to-red-400 flex items-center justify-center mx-auto mb-4"
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{ backgroundColor: '#780000' }}
           whileHover={{ scale: 1.05 }}
           transition={{ 
             duration: 0.3
           }}
         >
-          <Zap className="w-8 h-8 text-red-800" />
+          <Zap className="w-8 h-8 text-white" />
         </motion.div>
 
         <h3 className={`font-display text-2xl font-bold mb-2 transition-colors duration-300 ${
@@ -52,9 +53,11 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
       {/* Main CTA Button */}
       <motion.button
         onClick={handleStartGame}
-        className="group relative bg-gradient-to-r from-red-400 to-red-500 text-red-900 font-bold text-xl px-8 py-4 rounded-xl overflow-hidden transition-all duration-300"
+        className="group relative text-white font-bold text-xl px-8 py-4 rounded-xl overflow-hidden transition-all duration-300"
+        style={{ backgroundColor: '#780000' }}
         whileHover={{ 
-          scale: 1.05
+          scale: 1.05,
+          backgroundColor: '#8B0000'
         }}
         whileTap={{ scale: 0.98 }}
         transition={{ 
@@ -73,7 +76,7 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
 
         {/* Shimmer Effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
           initial={false}
         />
       </motion.button>
@@ -83,15 +86,15 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
         darkMode ? 'text-gray-400' : 'text-gray-600'
       }`}>
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-300"></div>
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#780000' }}></div>
           <span>5 Levels Available</span>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-sky-300"></div>
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#a91b3d' }}></div>
           <span>Cultural Learning</span>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-violet-300"></div>
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#8B4513' }}></div>
           <span>Pattern Recognition</span>
         </div>
       </div>
@@ -104,7 +107,8 @@ const GameAction = ({ currentLevel, darkMode = false }) => {
         </div>
         <div className={`w-full rounded-full h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
           <motion.div
-            className="bg-gradient-to-r from-red-300 to-red-400 h-2 rounded-full"
+            className="h-2 rounded-full"
+            style={{ backgroundColor: '#780000' }}
             initial={{ width: 0 }}
             animate={{ width: `${(Math.min(currentLevel, 5) / 5) * 100}%` }}
             transition={{ duration: 1, delay: 0.3 }}

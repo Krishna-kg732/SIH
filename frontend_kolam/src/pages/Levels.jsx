@@ -1,12 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Star, Lock, Play, ArrowLeft } from 'lucide-react';
+import { 
+  KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+  KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8,
+  KolamPattern9, KolamPattern10
+} from '../assets/svg';
 import Navbar from '../components/Navbar';
+import useActivityDetection from '../hooks/useActivityDetection';
 
 const Levels = () => {
   const [darkMode, setDarkMode] = useState(false);
+  const [shouldSpin, setShouldSpin] = useState(false);
+  const { setInactivityCallback } = useActivityDetection(12000);
   const navigate = useNavigate();
+
+  // Activity detection for background animations
+  useEffect(() => {
+    setInactivityCallback(() => {
+      setShouldSpin(true);
+      // Reset spinning after 4 seconds
+      setTimeout(() => setShouldSpin(false), 4000);
+    });
+  }, [setInactivityCallback]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -39,16 +56,86 @@ const Levels = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`min-h-screen transition-colors duration-300 relative overflow-hidden ${
       darkMode 
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
-        : 'bg-gradient-to-br from-amber-50 via-white to-gray-50'
+        : 'bg-gradient-to-br from-background via-white to-[#f5f0e7]'
     }`}>
+      {/* Background Floating Kolam Patterns */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[
+          KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+          KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8
+        ].map((PatternComponent, i) => (
+          <motion.div
+            key={`bg-pattern-${i}`}
+            className="absolute opacity-5"
+            style={{
+              left: `${15 + (i * 12)}%`,
+              top: `${10 + (i * 12)}%`,
+            }}
+            animate={{
+              x: [0, 20, 0],
+              y: [0, -15, 0],
+              rotate: shouldSpin ? [0, 360] : [0, 90, 180, 270, 360],
+            }}
+            transition={{
+              duration: shouldSpin ? 1.5 : 25 + Math.random() * 15,
+              repeat: shouldSpin ? 3 : Infinity,
+              ease: shouldSpin ? "easeInOut" : "linear",
+              delay: shouldSpin ? i * 0.2 : i * 2,
+            }}
+          >
+            <PatternComponent 
+              size={60 + Math.random() * 30}
+              color={darkMode ? "#FB923C" : "#780000"}
+              opacity={0.1}
+            />
+          </motion.div>
+        ))}
+        
+        {/* Additional smaller patterns */}
+        {[...Array(8)].map((_, i) => {
+          const PatternComponent = [
+            KolamPattern1, KolamPattern2, KolamPattern3, KolamPattern4,
+            KolamPattern5, KolamPattern6, KolamPattern7, KolamPattern8,
+            KolamPattern9, KolamPattern10
+          ][i % 10];
+          return (
+            <motion.div
+              key={`small-pattern-${i}`}
+              className="absolute opacity-3"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                x: [0, -10, 0],
+                y: [0, 10, 0],
+                rotate: shouldSpin ? [0, 360] : [0, -180, 0],
+              }}
+              transition={{
+                duration: shouldSpin ? 1 : 30 + Math.random() * 20,
+                repeat: shouldSpin ? 2 : Infinity,
+                ease: shouldSpin ? "easeInOut" : "linear",
+                delay: shouldSpin ? Math.random() * 2 : Math.random() * 10,
+              }}
+            >
+              <PatternComponent 
+                size={25 + Math.random() * 15}
+                color={darkMode ? "#A78BFA" : "#a91b3d"}
+                opacity={0.08}
+              />
+            </motion.div>
+          );
+        })}
+      </div>
+
       {/* Navigation */}
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
       
       {/* Main Content */}
-      <main className="pt-20 min-h-screen">
+      <main className="pt-20 min-h-screen relative z-10">
         <div className="max-w-6xl mx-auto px-6 py-8">
           
           {/* Header */}
