@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    .kolam-path {
+      fill: none;
+      stroke: white;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .kolam-dot {
+      fill: white;
+      r: 1;
+    }
+    @media (prefers-color-scheme: light) {
+      .kolam-path {
+        stroke: #2c2c2c;
+      }
+      .kolam-dot {
+        fill: #2c2c2c;
+      }
+    }
+  </style>
+  <rect width="100" height="100" fill="transparent"/>
+  
+  <!-- Central diamond pattern -->
+  <path d="M50 20 L60 30 L50 40 L40 30 Z" class="kolam-path"/>
+  <circle cx="50" cy="30" class="kolam-dot"/>
+  
+  <!-- Top section -->
+  <path d="M50 10 L55 15 L50 20 L45 15 Z" class="kolam-path"/>
+  <circle cx="50" cy="15" class="kolam-dot"/>
+  
+  <!-- Upper diamond row -->
+  <path d="M30 30 L40 40 L30 50 L20 40 Z" class="kolam-path"/>
+  <circle cx="30" cy="40" class="kolam-dot"/>
+  
+  <path d="M70 30 L80 40 L70 50 L60 40 Z" class="kolam-path"/>
+  <circle cx="70" cy="40" class="kolam-dot"/>
+  
+  <!-- Middle large diamond -->
+  <path d="M35 45 L50 60 L65 45 L50 30 Z" class="kolam-path"/>
+  <circle cx="50" cy="45" class="kolam-dot"/>
+  <circle cx="42" cy="37" class="kolam-dot"/>
+  <circle cx="58" cy="37" class="kolam-dot"/>
+  <circle cx="42" cy="53" class="kolam-dot"/>
+  <circle cx="58" cy="53" class="kolam-dot"/>
+  
+  <!-- Lower diamond row -->
+  <path d="M30 60 L40 70 L30 80 L20 70 Z" class="kolam-path"/>
+  <circle cx="30" cy="70" class="kolam-dot"/>
+  
+  <path d="M70 60 L80 70 L70 80 L60 70 Z" class="kolam-path"/>
+  <circle cx="70" cy="70" class="kolam-dot"/>
+  
+  <!-- Bottom section -->
+  <path d="M50 80 L60 70 L50 60 L40 70 Z" class="kolam-path"/>
+  <circle cx="50" cy="70" class="kolam-dot"/>
+  
+  <path d="M50 90 L55 85 L50 80 L45 85 Z" class="kolam-path"/>
+  <circle cx="50" cy="85" class="kolam-dot"/>
+  
+  <!-- Side extensions -->
+  <path d="M10 50 L20 60 L10 70 L5 60 Z" class="kolam-path"/>
+  <circle cx="12" cy="60" class="kolam-dot"/>
+  
+  <path d="M90 50 L95 60 L90 70 L80 60 Z" class="kolam-path"/>
+  <circle cx="88" cy="60" class="kolam-dot"/>
+  
+  <!-- Connecting curves -->
+  <path d="M20 40 Q25 45 30 40" class="kolam-path"/>
+  <path d="M70 40 Q75 45 80 40" class="kolam-path"/>
+  <path d="M20 70 Q25 65 30 70" class="kolam-path"/>
+  <path d="M70 70 Q75 65 80 70" class="kolam-path"/>
+  
+  <!-- Inner connecting lines -->
+  <path d="M40 30 Q45 35 50 30" class="kolam-path"/>
+  <path d="M50 30 Q55 35 60 30" class="kolam-path"/>
+  <path d="M40 70 Q45 65 50 70" class="kolam-path"/>
+  <path d="M50 70 Q55 65 60 70" class="kolam-path"/>
+</svg>

@@ -1,0 +1,25 @@
+{
+  "name": "Kolam Vision - AI-Powered Cultural Preservation",
+  "short_name": "Kolam Vision",
+  "description": "From Dots to Designs. Rediscover traditional Kolam patterns with AI-powered recognition and interactive learning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#780000",
+  "theme_color": "#780000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon-32x32.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/kolam-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "entertainment", "utilities"],
+  "screenshots": []
+}
