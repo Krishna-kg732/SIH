@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Camera, X, CheckCircle, LucideZoomIn } from 'lucide-react';
+import { Upload, Camera, X, CheckCircle, LucideZoomIn, Brain } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimatedPolygonGrid from '../components/AnimatedPolygonGrid';
 import apiService from '../services/apiService';
@@ -17,6 +17,7 @@ const AIRecognition = () => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAnalysisLoading, setShowAnalysisLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [creationProgress, setCreationProgress] = useState(0);
@@ -52,7 +53,8 @@ const AIRecognition = () => {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('image/')) {
         setUploadedFile(file);
-        handleAnalysis(file);
+        // Don't automatically analyze - wait for user to click analyze button
+        setAnalysisResult(null); // Clear any previous results
       }
     }
   }, []);
@@ -63,30 +65,87 @@ const AIRecognition = () => {
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
         setUploadedFile(file);
-        handleAnalysis(file);
+        // Don't automatically analyze - wait for user to click analyze button
+        setAnalysisResult(null); // Clear any previous results
       }
     }
   };
 
   // AI analysis using real API
-  const handleAnalysis = async (file) => {
+  const handleAnalysis = async (file = uploadedFile) => {
+    if (!file) {
+      alert('Please upload an image first');
+      return;
+    }
+
     setIsAnalyzing(true);
+    setShowAnalysisLoading(true);
     setAnalysisResult(null);
+    
+    // Start the API call and minimum delay in parallel
+    const startTime = Date.now();
+    const minimumDelay = 2000; // 2 seconds minimum loading time
     
     try {
       const result = await apiService.predictKolam(file);
       
       // Handle successful response
+      console.log('🔍 Frontend received result:', result);
+      
+      // Smart confidence handling: check if it's already a percentage or decimal
+      let confidenceValue = result.confidence || 0;
+      if (confidenceValue > 0 && confidenceValue <= 1) {
+        // It's a decimal (0.0 - 1.0), convert to percentage
+        confidenceValue = Math.round(confidenceValue * 100);
+      } else if (confidenceValue > 100) {
+        // It seems to be already in some other format, cap it at 100
+        confidenceValue = Math.min(100, Math.round(confidenceValue / 100));
+      } else {
+        // It's likely already a percentage (1-100)
+        confidenceValue = Math.round(confidenceValue);
+      }
+      
+      // Fix the empty pattern field issue with more robust extraction
+      const patternName = result.label || 
+                         result.highest_scored_class || 
+                         result.class || 
+                         result.predicted_class || 
+                         result.pattern || 
+                         result.pattern_type || 
+                         result.kolam_type ||
+                         result.prediction ||
+                         result.name ||
+                         'Unknown Pattern';
+      
+      console.log('🔍 Extracted pattern name:', patternName);
+      console.log('🔍 Available fields in result:', Object.keys(result));
+      
+      // Ensure minimum loading time
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minimumDelay - elapsedTime);
+      
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+      
       setAnalysisResult({
-        pattern: result.label || 'Unknown Pattern',
-        confidence: result.confidence ? Math.round(result.confidence * 100) : 0,
-        description: result.design_principle || 'No design principle available',
+        pattern: patternName,
+        confidence: confidenceValue,
+        description: result.design_principle || result.related_design_principle || 'No design principle available',
         elements: ['Traditional Pattern', 'Cultural Heritage', 'Geometric Design', 'Artistic Expression'],
         difficulty: 'Intermediate', // Backend doesn't provide this yet
         region: 'India' // Backend doesn't provide this yet
       });
     } catch (error) {
       console.error('Analysis failed:', error);
+      
+      // Ensure minimum loading time even for errors
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minimumDelay - elapsedTime);
+      
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
       
       // Handle different types of errors
       let errorMessage = 'Unable to analyze the image. Please try again with a clear Kolam pattern image.';
@@ -108,12 +167,21 @@ const AIRecognition = () => {
       });
     } finally {
       setIsAnalyzing(false);
+      setShowAnalysisLoading(false);
     }
   };
 
   // Handle button actions
   const handleUploadClick = () => {
     document.getElementById('file-input').click();
+  };
+
+  const handleAnalyzeClick = () => {
+    if (!uploadedFile) {
+      alert('Please upload an image first');
+      return;
+    }
+    handleAnalysis();
   };
 
   const handleCaptureClick = () => {
@@ -367,7 +435,7 @@ const AIRecognition = () => {
             <p className={`font-body text-xl md:text-2xl leading-relaxed max-w-3xl mx-auto transition-colors duration-300 ${
               darkMode ? 'text-gray-300' : 'text-[#2c2c2c]/80'
             }`}>
-              Upload images and get AI-powered analysis of Kolam patterns
+              Upload images and click Analyze to get AI-powered analysis of Kolam patterns
             </p>
           </motion.div>
 
@@ -478,16 +546,50 @@ const AIRecognition = () => {
                     />
                   </div>
 
-                  {/* Analysis overlay */}
+                  {/* Analysis overlay with Kolam pattern loading */}
                   {isAnalyzing && (
-                    <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center backdrop-blur-sm">
                       <div className="text-center text-white">
+                        {/* Rotating Kolam Pattern */}
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                          className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full mx-auto mb-4"
-                        />
-                        <p className="text-lg font-semibold">Analyzing Pattern...</p>
+                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                          className="mx-auto mb-6"
+                        >
+                          <KolamPattern1 
+                            size={80} 
+                            color="#FFFFFF" 
+                            strokeWidth={2}
+                          />
+                        </motion.div>
+                        
+                        {/* Pulsing secondary pattern */}
+                        <motion.div
+                          animate={{ 
+                            scale: [1, 1.1, 1],
+                            opacity: [0.6, 1, 0.6]
+                          }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          className="mx-auto mb-4"
+                        >
+                          <KolamPattern2 
+                            size={40} 
+                            color="#FFFFFF" 
+                            strokeWidth={1.5}
+                            opacity={0.7}
+                          />
+                        </motion.div>
+                        
+                        <motion.p 
+                          className="text-lg font-semibold"
+                          animate={{ opacity: [1, 0.7, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          Analyzing Kolam Pattern...
+                        </motion.p>
+                        <p className="text-sm text-white/80 mt-2">
+                          Please wait while our AI examines your image
+                        </p>
                       </div>
                     </div>
                   )}
@@ -506,7 +608,7 @@ const AIRecognition = () => {
             {[
               { icon: Upload, label: 'Upload', action: handleUploadClick, disabled: false },
               { icon: Camera, label: 'Capture', action: handleCaptureClick, disabled: false },
-              { icon: LucideZoomIn, label: isCreating ? 'Creating...' : 'Analyze', action: handleCreateClick, disabled: !uploadedFile || isCreating }
+              { icon: Brain, label: isAnalyzing ? 'Analyzing...' : 'Analyze', action: handleAnalyzeClick, disabled: !uploadedFile || isAnalyzing }
             ].map((button, index) => (
               <motion.button
                 key={button.label}
@@ -678,6 +780,168 @@ const AIRecognition = () => {
           )}
         </div>
       </main>
+
+      {/* Full-screen Analysis Loading Overlay */}
+      {showAnalysisLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center"
+        >
+          <div className="text-center text-white p-8 relative">
+            {/* Main central rotating Kolam pattern */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              className="mx-auto mb-8 relative z-10"
+            >
+              <KolamPattern1 
+                size={120} 
+                color="#FFFFFF" 
+                strokeWidth={2}
+              />
+            </motion.div>
+            
+            {/* Scattered animated patterns around the screen */}
+            {/* Top-left rotating patterns */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+              className="absolute top-10 left-10"
+            >
+              <KolamPattern2 size={40} color="#FFFFFF" strokeWidth={1.5} opacity={0.6} />
+            </motion.div>
+            
+            <motion.div
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-20 left-32"
+            >
+              <KolamPattern3 size={35} color="#FFFFFF" strokeWidth={1.5} opacity={0.5} />
+            </motion.div>
+            
+            {/* Top-right patterns */}
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+              className="absolute top-16 right-12"
+            >
+              <KolamPattern4 size={45} color="#FFFFFF" strokeWidth={1.5} opacity={0.7} />
+            </motion.div>
+            
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], rotate: 360 }}
+              transition={{ 
+                scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                rotate: { duration: 6, repeat: Infinity, ease: "linear" }
+              }}
+              className="absolute top-4 right-40"
+            >
+              <KolamPattern5 size={30} color="#FFFFFF" strokeWidth={1.5} opacity={0.4} />
+            </motion.div>
+            
+            {/* Bottom-left patterns */}
+            <motion.div
+              animate={{ scale: [1, 1.4, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="absolute bottom-12 left-16"
+            >
+              <KolamPattern6 size={38} color="#FFFFFF" strokeWidth={1.5} opacity={0.6} />
+            </motion.div>
+            
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
+              className="absolute bottom-32 left-8"
+            >
+              <KolamPattern7 size={42} color="#FFFFFF" strokeWidth={1.5} opacity={0.5} />
+            </motion.div>
+            
+            {/* Bottom-right patterns */}
+            <motion.div
+              animate={{ rotate: -360, scale: [1, 1.1, 1] }}
+              transition={{ 
+                rotate: { duration: 4.5, repeat: Infinity, ease: "linear" },
+                scale: { duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 1 }
+              }}
+              className="absolute bottom-8 right-20"
+            >
+              <KolamPattern8 size={36} color="#FFFFFF" strokeWidth={1.5} opacity={0.7} />
+            </motion.div>
+            
+            <motion.div
+              animate={{ scale: [1, 1.5, 1] }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+              className="absolute bottom-24 right-6"
+            >
+              <KolamPattern9 size={34} color="#FFFFFF" strokeWidth={1.5} opacity={0.4} />
+            </motion.div>
+            
+            {/* Middle-left and middle-right patterns */}
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: "linear" }}
+              className="absolute top-1/2 left-4 -translate-y-1/2"
+            >
+              <KolamPattern10 size={40} color="#FFFFFF" strokeWidth={1.5} opacity={0.6} />
+            </motion.div>
+            
+            <motion.div
+              animate={{ scale: [1, 1.3, 1], rotate: -360 }}
+              transition={{ 
+                scale: { duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 },
+                rotate: { duration: 5.5, repeat: Infinity, ease: "linear" }
+              }}
+              className="absolute top-1/2 right-8 -translate-y-1/2"
+            >
+              <KolamPattern1 size={44} color="#FFFFFF" strokeWidth={1.5} opacity={0.5} />
+            </motion.div>
+            
+            {/* Additional floating patterns */}
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2.7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2"
+            >
+              <KolamPattern2 size={28} color="#FFFFFF" strokeWidth={1.5} opacity={0.3} />
+            </motion.div>
+            
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 4.2, repeat: Infinity, ease: "linear" }}
+              className="absolute top-2/3 right-1/4 translate-x-1/2 -translate-y-1/2"
+            >
+              <KolamPattern3 size={32} color="#FFFFFF" strokeWidth={1.5} opacity={0.4} />
+            </motion.div>
+            
+            
+            {/* Text animations */}
+            <motion.h2 
+              className="text-3xl font-headings font-bold mb-4"
+              animate={{ opacity: [1, 0.7, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              Analyzing Kolam Pattern
+            </motion.h2>
+            
+            <motion.p 
+              className="text-lg text-white/80 mb-2"
+              animate={{ opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            >
+              Our AI is examining your image...
+            </motion.p>
+            
+            <motion.p 
+              className="text-sm text-white/60"
+              animate={{ opacity: [0.6, 0.9, 0.6] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            >
+              Identifying patterns, cultural significance, and design principles
+            </motion.p>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

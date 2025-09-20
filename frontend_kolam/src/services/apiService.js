@@ -47,34 +47,119 @@ class ApiService {
 
   // Kolam-specific API methods
   async predictKolam(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    // Use the official Kolam prediction API
-    const apiUrl = 'https://kartikeya.me/api/v1/kolam/predict';
-    
     try {
+      // Convert file to base64
+      const base64Image = await this.fileToBase64(file);
+      
+      console.log('🔧 Converting file to base64:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        base64Length: base64Image.length
+      });
+      
+      // Create a new File object from the base64 data
+      const base64File = this.base64ToFile(base64Image, file.name, file.type);
+      
+      // Create FormData with the base64-converted file
+      const formData = new FormData();
+      formData.append('file', base64File);
+      
+      console.log('🔧 Sending base64-converted file to API:', {
+        fileName: base64File.name,
+        fileSize: base64File.size,
+        fileType: base64File.type
+      });
+      
+      // Use the official Kolam prediction API
+      const apiUrl = 'https://kartikeya.me/api/v1/kolam/predict';
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
       });
       
+      console.log('🔧 API Response status:', response.status);
+      console.log('🔧 API Response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('🔧 API Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
       
       const result = await response.json();
       
+      // Debug: Log the actual API response to understand the format
+      console.log('🔍 Raw API Response:', result);
+      console.log('🔍 Response keys:', Object.keys(result));
+      if (result.confidence !== undefined) {
+        console.log('🔍 Confidence value:', result.confidence, 'Type:', typeof result.confidence);
+      }
+      if (result.highest_scored_class !== undefined) {
+        console.log('🔍 Highest scored class:', result.highest_scored_class);
+      }
+      if (result.related_design_principle !== undefined) {
+        console.log('🔍 Design principle:', result.related_design_principle);
+      }
+      
+      // Extract pattern name with multiple fallback options
+      const patternName = result.highest_scored_class || 
+                         result.class || 
+                         result.predicted_class || 
+                         result.label ||
+                         result.pattern || 
+                         result.pattern_type || 
+                         result.kolam_type ||
+                         result.prediction ||
+                         result.name ||
+                         'Unknown Pattern';
+      
+      console.log('🔍 Final extracted pattern name:', patternName);
+      
       // Transform the API response to match our frontend expectations
       return {
-        label: result.highest_scored_class || 'Unknown Pattern',
-        confidence: result.confidence || 0,
-        design_principle: result.related_design_principle || 'No design principle available'
+        label: patternName,
+        highest_scored_class: result.highest_scored_class,
+        confidence: result.confidence || result.score || 0,
+        design_principle: result.related_design_principle || result.design_principle || 'No design principle available',
+        // Pass through all original fields for debugging
+        raw_response: result
       };
     } catch (error) {
       console.error('Kolam prediction API request failed:', error);
       throw error;
     }
+  }
+
+  // Helper method to convert file to base64
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Remove the data:image/jpeg;base64, prefix to get just the base64 string
+        const base64String = reader.result.split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  // Helper method to convert base64 back to File object
+  base64ToFile(base64String, fileName, mimeType) {
+    // Convert base64 to binary data
+    const byteCharacters = atob(base64String);
+    const byteNumbers = new Array(byteCharacters.length);
+    
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    
+    const byteArray = new Uint8Array(byteNumbers);
+    
+    // Create a new File object
+    return new File([byteArray], fileName, { type: mimeType });
   }
 
   async generateKolamFromDescription(query, generateImage = true) {
@@ -101,8 +186,13 @@ class ApiService {
       
       const result = await response.json();
       
+      // Debug: Log the generation API response
+      console.log('🎨 Generation API Response:', result);
+      console.log('🎨 Response keys:', Object.keys(result));
+      console.log('🎨 Image data available:', !!result.image_base64 || !!result.image);
+      
       // Return the result as-is since the API should provide the expected format
-      // Typically this would include explanation and image_base64 fields
+      // Focus on image_base64 field for display
       return result;
     } catch (error) {
       console.error('Kolam knowledge API request failed:', error);

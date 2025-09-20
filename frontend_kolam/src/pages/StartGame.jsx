@@ -17,7 +17,7 @@ const StartGame = () => {
     currentLevel: 1,
     completedLevels: [],
     accuracy: 0,
-    username: "Kushagra Chaudhary"
+    username: "User"
   });
 
   useEffect(() => {
@@ -39,7 +39,7 @@ const StartGame = () => {
         currentLevel: 1,
         completedLevels: [],
         accuracy: 0,
-        username: "Kushagra Chaudhary"
+        username: "User"
       };
       setUserProgress(demoProgress);
       localStorage.setItem('kolamVisionProgress', JSON.stringify(demoProgress));

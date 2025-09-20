@@ -29,7 +29,7 @@ const TestYourKnowledge = () => {
   };
   // Mock user data - TODO: Replace with real API data
   const mockUserData = {
-    username: "Kushagra Chaudhary",
+    username: "User",
     currentLevel: 3,
     currentAccuracy: 82,
     avatar: null // Placeholder for avatar image

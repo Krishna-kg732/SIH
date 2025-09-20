@@ -116,14 +116,10 @@ const RecreatePatterns = () => {
       const result = await apiService.generateKolamFromDescription(inputValue, true);
       console.log('✅ Generation result:', result);
       
-      // Handle successful response
+      // Handle successful response - only store the image
       setGeneratedResult({
-        explanation: result.explanation || result.description || 'Pattern generated successfully',
         image_base64: result.image_base64 || result.image || null,
-        // Add any additional fields that might be returned by the API
-        cultural_significance: result.cultural_significance,
-        traditional_elements: result.traditional_elements,
-        difficulty_level: result.difficulty_level
+        error: false
       });
     } catch (error) {
       console.error('❌ Error generating design:', error);
@@ -141,9 +137,9 @@ const RecreatePatterns = () => {
       }
       
       setGeneratedResult({
-        explanation: errorMessage,
         image_base64: null,
-        error: true
+        error: true,
+        errorMessage: errorMessage
       });
     } finally {
       setIsGenerating(false);
@@ -423,40 +419,43 @@ const RecreatePatterns = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
-                className="mt-16 p-8 rounded-2xl border-2 border-[#A67C52] bg-white/80 backdrop-blur-sm"
+                className="mt-16 rounded-2xl border-2 border-[#A67C52] bg-white/80 backdrop-blur-sm overflow-hidden"
                 style={{ boxShadow: '0 10px 25px rgba(166, 124, 82, 0.1)' }}
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <Palette className="w-8 h-8" style={{ color: generatedResult.error ? '#DC2626' : '#8B4B4B' }} />
-                  <h3 className="text-2xl font-headings font-bold" style={{ color: '#2C2C2C' }}>
-                    {generatedResult.error ? 'Generation Error' : 'Your AI-Generated Design'}
-                  </h3>
-                </div>
-
-                <p className={`text-lg leading-relaxed mb-6 ${generatedResult.error ? 'text-red-600' : ''}`} style={{ color: generatedResult.error ? '#DC2626' : '#2C2C2C' }}>
-                  {generatedResult.explanation}
-                </p>
-
                 {generatedResult.image_base64 ? (
-                  <div className="rounded-xl overflow-hidden bg-gray-100 shadow-lg">
+                  <div className="w-full">
                     <img
                       src={`data:image/png;base64,${generatedResult.image_base64}`}
                       alt="Generated Kolam Design"
                       className="w-full h-auto"
                     />
                   </div>
-                ) : !generatedResult.error ? (
-                  <div className="rounded-xl bg-gray-100 h-64 flex items-center justify-center">
+                ) : generatedResult.error ? (
+                  <div className="p-8 text-center">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <Palette className="w-8 h-8 text-red-600" />
+                      <h3 className="text-2xl font-headings font-bold text-red-600">
+                        Generation Error
+                      </h3>
+                    </div>
+                    <p className="text-lg text-red-600 mb-6">
+                      {generatedResult.errorMessage}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="h-64 flex items-center justify-center bg-gray-100">
                     <p className="text-gray-500 italic">Generated image will appear here</p>
                   </div>
-                ) : null}
+                )}
 
-                <button
-                  onClick={handleClear}
-                  className="mt-6 px-6 py-2 rounded-full border-2 border-[#8B4B4B] text-[#8B4B4B] font-medium transition-all duration-300 hover:bg-[#8B4B4B] hover:text-white"
-                >
-                  Create Another
-                </button>
+                <div className="p-6 bg-white/90">
+                  <button
+                    onClick={handleClear}
+                    className="w-full px-6 py-3 rounded-full border-2 border-[#8B4B4B] text-[#8B4B4B] font-medium transition-all duration-300 hover:bg-[#8B4B4B] hover:text-white"
+                  >
+                    Create Another
+                  </button>
+                </div>
               </motion.div>
             )}
           </div>
